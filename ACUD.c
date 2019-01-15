@@ -89,7 +89,7 @@ sbit RI   = 0x98;
 #define UART_RxComp		0x02;		
 
 // Declare UART related to  		
-#define Fosc				22				// 0r 11
+#define Fosc				22.1184			// 0r 11.0592
 #define Baudrate			9600			// *****
 #define UART_Inbuf_Max 		5;
 #define UART_Outbuf_Max		5;
@@ -178,7 +178,16 @@ void UART_Init(float Fosc ,int Baudrate){
 			接收完畢旗號，此位元須由軟體清除
 	*/
 
-	TMOD&=0x0F			// Reset Timer 1 
+	Timer1_Init(Fosc):		// Timer 1 contribute to UART 
+	
+	UART_Inbuf_Index=0;
+	UART_Outbuf_Index=0;
+}
+
+
+void Timer1_Init(float Fosc){		// Timer 1 contribute to UART
+
+	TMOD&=0x0F			// Clear Timer 1 
 	TMOD|=0x20; 		// TMOD=00100000B, Timer1 in Mode 2, Auto reload mode.
 	/* TMOD: Timer Mode Register:	
 		| Tmler 1					| Timer 0                   |
@@ -198,10 +207,10 @@ void UART_Init(float Fosc ,int Baudrate){
 		11-Mode 3, Multiple mode		
 	*/
 	
-	#if Fosc==22
-		TH1 = 256-(Fosc)/(long)(32*12*22118400); // Load timer value for baudrate generation
+	#if Fosc==22.1184	// or 11.0592
+		TH1 = 256-(Fosc*1000000)/(long)(32*12*Baudrate); // Load timer value for baudrate generation
 	#else
-		TH1 = 256-(Fosc)/(long)(32*12*11059000); // Load timer value for baudrate generation
+		TH1 = 256-(Fosc*1000000)/(long)(32*12*Baudrate); // Load timer value for baudrate generation
 	#endif
 	
 	/* TH1 Value
@@ -239,18 +248,35 @@ void UART_Init(float Fosc ,int Baudrate){
 	ITx: External Interrupt Triger Control
 		0: Set by program to enable external interrupt 1 to be triggered by a low-level signal to generate an interrupt.
 		1: Set by program to enable external interrupt 1 to be triggered by a falling edge signal to generate an interrupt.
-	*/
+	*/	
 	
-	UART_Inbuf_Index=0;
-	UART_Outbuf_Index=0;
+	
+	
+	
 }
+
 
 void Timer0_Init(){		// 10ms timer
 
 
 	TMOD&=0xF0;	// Clear Timer 0 
 	TMOD|=0x01; 	// Mode 1, 16 bit timer/count mode	
-	
+	/* TMOD: Timer Mode Register:	
+		| Tmler 1					| Timer 0                   |
+		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
+		| Gate | C/T  |  M1  |  M0  | Gate | C/T  |  M1  |  M0  |
+			
+	Gate Control
+		0 = Timer enabled
+		1 = Timer enabled if INTx is high
+	C/T:Counter or Timer Selector
+		0 = Internal count source (clock/12)
+		1 = External count source (Tx pin)
+	M1-M0: Mode Control
+		00-Mode 0, 13 bit timer/count mode
+		01-Mode 1, 16 bit timer/count mode
+		10-Mode 2, Auto reload mode
+		11-Mode 3, Multiple mode			
 	#if Fosc==22	
 		TH0=(65536-(10*1000/(22118400/12)))/256;
 		TL0=(65536-(10*1000/(22118400/12))%256;	
@@ -259,7 +285,7 @@ void Timer0_Init(){		// 10ms timer
 		TL0=(65536-(10*1000/(11059000/12)))%256;
 	#endif
 	
-	TR0=1;;			// TCON.TR0=1, Timer 0 start running
+	TR0=1;			// TCON.TR0=1, Timer 0 start running
 	/* TCON: Related to Timer:
 		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
 		| TF1  | TR1  | TF0  | TR0  |      |      |      |      |
