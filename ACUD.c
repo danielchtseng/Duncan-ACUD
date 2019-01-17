@@ -106,7 +106,7 @@ void Init(){
 	IE=0x00;		// Disable all interrupt
 	System_Init();
 	UART_Init(22.1184,9600);
-	TIMER_Init();
+	Timer0_Init(10);	// 10mS
 	ACUD_Init();
 	Interrupt_Enable();	//  Leave this function being as last function in Init() 
 }
@@ -128,7 +128,6 @@ void System_Init(){
 	PWDN	省電模式，必須使用reset訊號讓其回復到一般操作模式。
 	IDL		IDL=1會使8051的clock停止，必須使用外部中斷或reset訊號使8051回復到一般操作模式。	
 	*/
-	
 	
 }
 	
@@ -194,9 +193,9 @@ void UART_Init(float Fosc ,int Baudrate){
 	*/
 	
 	#if Fosc==22
-		TH1 = 256-(Fosc)/(long)(32*12*22118400); // Load timer value for baudrate generation
+		TH1 = 256-(Baudrate)/(long)(32*12*22118400); // Load timer value for baudrate generation
 	#else
-		TH1 = 256-(Fosc)/(long)(32*12*11059000); // Load timer value for baudrate generation
+		TH1 = 256-(Baudrate)/(long)(32*12*11059000); // Load timer value for baudrate generation
 	#endif
 	
 	/* TH1 Value
@@ -240,18 +239,18 @@ void UART_Init(float Fosc ,int Baudrate){
 	UART_Outbuf_Index=0;
 }
 
-void Timer0_Init(){		// 10ms timer
+void Timer0_Init(int N){		// N*1ms timer
 
 
 	TMOD&=0xF0;	// Clear Timer 0 
 	TMOD|=0x01; 	// Mode 1, 16 bit timer/count mode	
 	
 	#if Fosc==22	
-		TH0=(65536-(10*1000/(22118400/12)))/256;
-		TL0=(65536-(10*1000/(22118400/12))%256;	
+		TH0=(65536-(N*1000/(22118400/12)))/256;
+		TL0=(65536-(N*1000/(22118400/12))%256;	
 	#else
-		TH0=(65536-(10*1000/(11059000/12)))/256;
-		TL0=(65536-(10*1000/(11059000/12)))%256;
+		TH0=(65536-(N*1000/(11059000/12)))/256;
+		TL0=(65536-(N*1000/(11059000/12)))%256;
 	#endif
 	
 	TR0=1;;			// TCON.TR0=1, Timer 0 start running
@@ -322,10 +321,11 @@ void Interrupt_Enable(){
 	
 }	
 
-void Timer0() interrupt 1 {
+void Timer0() interrupt 1 {		// 10ms
+
 	
 	Key_Detect();
-	ADC_Detect();
+	Temperature_Detect();
 	
 	
 	
@@ -410,7 +410,12 @@ void uS_Delay (int N) {		//52us, 0r 104us
 
 ACUD_StateEvent() {
 	
-		Event=0x00; 
+	
+	
+	
+	
+	
+		Event=NULL; 
 }
 
 
@@ -421,6 +426,11 @@ Main() {
 
 
 	while(1){
+		
+		if (!(UART_Inbuf[0]==Null)) {
+		
+		
+		}
 		
 		if(Event) {
 			ACUD_StateEvent();
