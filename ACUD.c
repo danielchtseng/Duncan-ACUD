@@ -109,16 +109,16 @@ sbit EX0  = 0xA8;
 //
 // For example
 //      struct {
-//			unsigned int age : 3;
-//		} Age;   
+//			unsigned int age : 1;
+//		} Flag;   
 */
 union Bit_Field {					// all variables in union share same memory
 	
 	unsigned Flag;
 	
 	Struct {
-	unsigned UART_Rx : 1;         	// 注意: type 必須為整數(signed or unsigned皆可)
-	unsigned UART_TX : 1;
+	unsigned UART_Rx_Comp : 1;         	// 注意: type 必須為整數(signed or unsigned皆可)
+	unsigned UART_TX_Comp : 1;
 	unsigned ACP_Rx  : 1;
 	unsigned ACP_Tx  : 1;  
 	}
@@ -140,12 +140,12 @@ union Bit_Field {					// all variables in union share same memory
 int 	UART_In_Buf_Index;
 int 	UART_Out_buf_Index;
 char 	UART_Out_Buf[UART_In_Buf_Max];
-char 	UART_Iut_Buf[UART_Out_Buf_Max];
+char 	UART_In_Buf[UART_Out_Buf_Max];
 
 #define ACP_In_Buf_Max 		5;					// ***** Need to be confirmed
 #define ACP_Out_Buf_Max		5;					// ***** Need to be confirmed
 int 	ACP_In_Buf_Index;
-int 	CAP_Out_buf_Index;
+int 	ACP_Out_buf_Index;
 char 	ACP_Out_Buf[UART_In_Buf_Max];
 char 	ACP_Iut_Buf[UART_Out_Buf_Max];
 
@@ -255,7 +255,7 @@ void UART_Init(float Fosc ,int Baudrate){
 	#if Fosc==22
 		TH1 = 256-(Fosc)/(long)(32*12*22118400); // Load timer value for baudrate generation
 	#else
-		TH1 = 256-(Fosc)/(long)(32*12*11059000); // Load timer value for baudrate generation
+		TH1 = 256-(Fosc)/(long)(32*12*11059200); // Load timer value for baudrate generation
 	#endif
 	
 	/* TH1 Value
@@ -381,21 +381,30 @@ void Interrupt_Enable(){
 	
 }	
 
-void Timer_100ms() interrupt 1 {		// Timer0 INT vector=000Bh
+void Timer_10ms() interrupt 1 {		// Timer0 INT vector=000Bh
 	
 	Key_Detect();				// Udate Key present status
 	ADC_Detect();				// Update Temperture status
 	
 	
 	// Check Semaphore 
-	if (Flag.UART_Tx==1)
-		RI = 1; 					// Force to enter UART_ISR() again
 	
-	if (Flag.UART_Tx==1)
-		TI = 1; 					// Force to enter UART_ISR() again
 	
-	if 
+	if (Flag.UART_Rx_Comp==1){
+		if (Event==Null){				// Make sure previous event had been done
+			Event=UART_Rx_Comp;			// Updating Event for ACUD_StateEvent()
+			Flag.UART_Rx_Comp=0;
+		    ES=1;						// IE.ES,  Enable Serial Interrupt, UART comm. with PC
+		{
+	}	
 	
+	
+	
+	if (Flag.UART_Tx_Comp==1){
+		if (Event==Null) {				// Make sure previous event had been done
+			Event=UART_Tx_Comp;			// Updating Event for ACUD_StateEvent()
+			Flag.UART_Tx_Comp=0;
+		}
 	
 }
 
@@ -422,21 +431,14 @@ void UART_ISR() interrupt 4 { 		// Serial INT vector=0023h
 	
 		RI = 0;			// SCON.RI=0, UART_Rx ready to receive again
 	
-		if( UART_Inbuf_Index < UART_Inbuf_Max){
-			UART_Inbuf[UART_Inbuf_Index]=SBUF;	
-			UART_Inbuf_Index++;
-			
+		if( UART_In_Buf_Index <= UART_Inbuf_Max-1){
+			UART_In_Buf[UART_Inbuf_Index]=SBUF;	
+			UART_In_Buf_Index++;	
 		}
-		
-		else if (UART_Inbuf_Index >= UART_Inbuf_Max ) {
-			if (Event==Null) {				// Make sure previous event had been done
-				Event=UART_Rx_Comp;			// Updating Event for ACUD_StateEvent()
-				UART_Inbuf_Index=0;			// Reset UART_Inbuf_Index
-			}
-			else {
-				Flag.UART_Tx=1				// Sent semaphore to Timer_100ms to start 100ms delay
-
-			}
+		if ( UART_In_Buf_Index = UART_Inbuf_Max-1){
+			UART_In_Buf_Index=0;
+			Flag.UART_Rx_Comp=1;
+			ES=0;		// IE.ES,  Disable Serial Interrupt, UART comm. with PC
 		}
 	}
 
@@ -446,19 +448,15 @@ void UART_ISR() interrupt 4 { 		// Serial INT vector=0023h
 		
 		TI = 0;							// SCON.TI=0, UART_Tx ready to sent
 		
-		if ( UART_Outbuf_Index < UART_Outbuf_Max ){
-			SBUF = UART_Outbuf[UART_Outbuf_Index];
-			UART_Outbuf_Index++;
+		if ( UART_Out_Buf_Index <= UART_Out_Buf_Max-1 ){
+			SBUF = UART_Outbuf[UART_Out_Buf_Index];
+			UART_Out_Buf_Index++;
 			
 		}		
-		else if ( UART_Outbuf_Index >= UART_Outbuf_Max ){
-			if (Event==Null) {				// Make sure previous event had been done
-				Event=UART_Tx_Comp;			// Tx completed, send confirm Event for ACUD_StateEvent()
-				UART_Outbuf_Index=0;		// Reset UART_Inbuf_Index
-			}
-			else {
-				Flag.UART_Tx=1				// Sent semaphore to Timer_100ms to start 100ms delay
-			
+		if ( UART_Out_Buf_Index = UART_Outbuf_Max-1 ){
+				UART_Out_Buf_Index=0;		// Reset UART_Inbuf_Inde
+				Flag.UART_Tx_Comp=1;				// Sent semaphore to Timer_100ms to start 100ms delay
+	
 			}
 		}	
 	}
