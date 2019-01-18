@@ -533,19 +533,21 @@ Main() {
 
 	while(1){
 	
-		IF(!(UART_In_Buf[]==0)){
+		IF(!(strcmp(UART_In_Buf,0))){		// if UART_In_Buf != Empty
 			PC_Event_Handler();
 		}
-		IF(!(ACP_In_Buf[]==0)) }
+		
+		IF(!(strcmp(ACP_In_Buf,0))){		// if ACP_In_Buf != Empty
 			ACP_Event_Handler();
-		{
+		}
+		
 		if(Event) {
 			ACUD_Event_Handler();
 		}
 	
-		Air_Operation();		// depend on the command in Temo_Status 
-		Fan_Operation();		// depend on the command in Fan_Status 
-		Lighg_Operation();		// depend on the command in Light_Status 
+		Air_Manipulate();		// depend on the command in Temo_Status 
+		Fan_Manipulate();		// depend on the command in Fan_Status 
+		Light_Manipulate();		// depend on the command in Light_Status 
 	
 	}
 	
