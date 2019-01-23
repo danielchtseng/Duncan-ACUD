@@ -1,6 +1,8 @@
 
 // 8051 C 
 // ACUD
+// Ver: W044
+
 
 #include<reg51.h>
 /* BYTE Register
@@ -504,11 +506,6 @@ PC_StateEvent() {
 	}
 
 
-
-
-
-
-
 }
 
 
@@ -523,8 +520,6 @@ ACUD_StateEvent() {
 	
 	
 	
-		
-
 
 }
 
@@ -538,17 +533,10 @@ Main() {
 
 	while(1){
 	
-		IF(!(strcmp(UART_In_Buf,0))){		// if UART_In_Buf != Empty
-			PC_StateEvent();
-		}
-		
-		IF(!(strcmp(ACP_In_Buf,0))){		// if ACP_In_Buf != Empty
-			ACP_StateEvent();
-		}
-		
-		if(Event) {
-			ACUD_StateEvent();
-		}
+		PC_StateEvent();
+		ACP_StateEvent();
+		ACUD_StateEvent();
+
 	
 		Air_Manipulate();		// depend on the command in Temo_Status 
 		Fan_Manipulate();		// depend on the command in Fan_Status 
