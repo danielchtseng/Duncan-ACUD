@@ -1,7 +1,7 @@
 
 // 8051 C 
 // ACUD
-// Ver: W044-1605
+// Ver: W044-H20
 
 
 #include<reg51.h>
@@ -104,11 +104,10 @@ sbit EX0  = 0xA8;					// sbit EX0 = 0xA8^0
 union Bit_Field {					// all variables in union share same memory
 	
 	unsigned Flag;
-
+	
 	Struct {		// 注意: type 必須為整數(signed or unsigned皆可)
-
 	unsigned UART_Tx_Busy_Flg 		: 1;			// UART transmitting
-	unsigned PC_Rx_Appeared_Flg 		: 1;
+	unsigned PC_Rx_Appeared_Flg 	: 1;
 	unsigned PC_Tx_Pending_Flg 		: 1;
 	
 	}
@@ -297,25 +296,17 @@ void UART_Init(float Fosc ,int Baudrate){	// include T1 init
 		1: Set by program to enable external interrupt 1 to be triggered by a falling edge signal to generate an interrupt.
 	*/
 	
-	UART_In_Buf_Index=0;
-	UART_Out_Buf_Index=0;
+	UART_In_Buf_Index = 0;
+	UART_Out_Buf_Index = 0;
 
 }
 
 void TIMER0_NmS_Init(int N){		// NmS timer
 
-
 	TMOD&=0xF0;						// Clear Timer 0 
 	TMOD|=0x01; 					// Mode 1, 16 bit timer/count mode	
-	
-	#if Fosc==22.1184	
-		TH0=(65536-(N*1000/(Fosc*1000000/12)))/256;
-		TL0=(65536-(N*1000/(Fosc*1000000/12))%256;	
-	#else	// Fosc==11.0952
-		TH0=(65536-(N*1000/(Fosc*1000000/12)))/256;
-		TL0=(65536-(N*1000/(Fosc*1000000/12)))%256;
-	#endif
-	
+	TH0=(65536-(N*1000/(Fosc*1000000/12)))/256;
+	TL0=(65536-(N*1000/(Fosc*1000000/12))%256;	
 	TR0=1;;							// TCON.TR0=1, Timer 0 start running
 	/* TCON: Related to Timer:
 		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
@@ -342,7 +333,7 @@ void TIMER0_NmS_Init(int N){		// NmS timer
 
 void ACUD_Init(){
 	
-	ACUD_ID = P0;					// 
+	ACUD_ID = P2;					// 
 	
 }
 
@@ -361,7 +352,6 @@ void Interrupt_Enable(){
 	PT0	Timer0 
 	PX0	External 0
 	*/
-
 	ES=1;							// IE.ES,  Enable Serial Interrupt, UART comm. with PC
 	ET0=1;							// IE.ET0, Enable Timer0 Interrupt, 10ms period
 	EX1=1;							// IE.EX1, Enable Ext 1 Interrupt, Serial comm. with ACP
@@ -406,7 +396,7 @@ void IIMER0_NmS() interrupt 1 {		// Timer0 INT vector=000Bh
 	
 }
 
-void EXT1_ACP_Comm() interrupt 2 { 	// EXT1 INT, vector=0013h, UART Simulator
+void EXT1_ACP() interrupt 2 { 	// EXT1 INT, vector=0013h, UART Simulator
 	
 	// sbit RxD0 = P3^7;			// RD
 	// sbit TxD0 = P3^6;			// WR
@@ -415,32 +405,27 @@ void EXT1_ACP_Comm() interrupt 2 { 	// EXT1 INT, vector=0013h, UART Simulator
 	
 }
 
-void UART_PC_Comm() interrupt 4 { 	// UART INT, vector=0023h
+void UART_PC() interrupt 4 { 	// UART INT, vector=0023h
 	
 	EA=0;							// Suspend all int
 	
 	if ( RI ){ 						// SCON.RI, RI=1 means new content have received                       	
-	
-
-		// Flag.UART_Rx_Busy_Flg=1
+		
 		if( UART_In_Buf_Index < UART_In_Buf_Max){
-			UART_In_Buf[UART_Inbuf_Index]=SBUF;	
+			UART_In_Buf[UART_In_Buf_Index] = SBUF;	
 			UART_In_Buf_Index++;
 			RI = 0;					// SCON.RI=0, force UART_Rx ready to receive again
 		}
 		else {	// (UART_Inbuf_Index >= UART_Inbuf_Max 
 
-				UART_In_Buf_Index=0;// Reset UART_Inbuf_Index
-				Flag.UART_Rx_Busy_Flg = 0	// UART Rx busy
-				Flag_PC_Rx_Appeared_Flg = 1; // 
+				UART_In_Buf_Index = 0;// Reset UART_Inbuf_Index
+				Flag.PC_Rx_Appeared_Flg = 1; // 
 		}
 	}
 
-	// Every beginning when willing to sent data via UART
-	// TI should be set and UART_Outbuf_Index should be reset by program,
 	if ( TI ){    		// SCON.TI, TI=1 means previous content have been sent.   
 		
-		Flag.UART_TX_Busy_Flg=1;		
+		// Flag.UART_TX_Busy_Flg had been set in PC_Tx_Handler()		
 		
 		if ( UART_Out_Buf_Index < UART_Out_Buf_Max ){
 			SBUF = UART_Out_Buf[UART_Out_Buf_Index];
@@ -454,7 +439,6 @@ void UART_PC_Comm() interrupt 4 { 	// UART INT, vector=0023h
 			
 		}	
 	}
-	
 	EA=1;							// Resume all int
 }		
 
@@ -463,13 +447,13 @@ void PC_Tx_Handler(int *Tx_Data_Ptr, int Len){
 	
 	// data need to be port to UART_Out_Buf[] before by way of UART
 	if(!(FLAG.UART_TX_Busy_Flg) == 1){// UART Tx avilable
-		
+	
+		Flag.UART_TX_Busy_Flg = 1; 
 		for (i=0,i<Len,i++) {
-			UART_Out_Buf[i]=*Tx_Data;
-			Tx_Data++;
+			UART_Out_Buf[i]=*Tx_Data_Ptr;
+			Tx_Data_Ptr++;
 		}
-		
-		UART_Out_Buf_Index=0;		// UART_Out_Buf should be prepared already
+		UART_Out_Buf_Index = 0;		// Initial UART_Out_Buf_Index
 		FLAG.PC_Tx_Pending_Flg = 0;
 		TI=1; 						// Triger UART_ISR() to start UART_Tx 
 	}
@@ -486,10 +470,11 @@ void PC_Tx_Handler(int *Tx_Data_Ptr, int Len){
 void mS_Delay(int N){				//	Delay t*1ms 
 	
 	int i,j;						// 宣告整數變數i,j,N 
+	
 	for (i=0;i<N;i++)				// 計數N次,延遲 N*1ms 
-	#if Fosc==22118400				// 延遲 t*1ms @22MHz
+	#if Fosc==22.1184				// 延遲 t*1ms @22.1184MHz
 		for (j=0;j<1600;j++);	
-	#else							// 延遲 t*1ms @11MHz
+	#else							// 延遲 t*1ms @11.0952MHz
 		for (j=0;j<800;j++);	 
 	#endif
 }
@@ -506,7 +491,7 @@ void uS_Delay (int N) {				// 52us, 0r 104us
 
 
 
-PC_StateEvent() {
+void PC_StateEvent() {
 
 	while(Flag.PC_Rx_Appeared_Flg){
 
@@ -514,36 +499,33 @@ PC_StateEvent() {
 
 
 
-
+			break;
 		}else if Strcpm ( UART_In_Buf," string ") = 0){
 			
 			
 			
-			
+			break;
 		}else if Strcpm ( UART_In_Buf," string ") = 0){
 			
 			
 			
-			
+			break;
 		}else if Strcpm ( UART_In_Buf," string ") = 0){	
 		
 		
 		
-		
+			break;
 		}else if Strcpm ( UART_In_Buf," string ") = 0){
 			
 		
-		
-		else {
-		
-			Flag.PC_Rx_Appeared_Flg = 0
-		}
-		
+			break;
+
+		Flag.PC_Rx_Appeared_Flg = 0
 	}
 }
 
 
-ACP_StateEvent() {
+void ACP_StateEvent() {
 
 
 
@@ -552,7 +534,7 @@ ACP_StateEvent() {
 }
 
 
-ACUD_StateEvent() {
+void ACUD_StateEvent() {
 	
 	
 	
