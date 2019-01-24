@@ -1,6 +1,8 @@
 
 // 8051 C 
 // ACUD
+// Ver: W044-1517
+
 
 #include<reg51.h>
 /* BYTE Register
@@ -46,15 +48,13 @@ sbit DIN  = P1^3;
 
 // Port 3: 
 // UART Simulator
-sbit RxD0 = P3^7;		// RD
-sbit TxD0 = P3^6;		// WR
-sbit DE0  = P3^5;		// T1
-sbit INT1 = P3^3;		// INT1
-//
-sbit DE1  = P3^2;		// INT0, UART 
-//UART
-sbit TXD  = P3^1;		// TXD
-sbit RXD  = P3^0;		// RXD
+sbit RxD0 = P3^7;					// RD
+sbit TxD0 = P3^6;					// WR
+sbit DE0  = P3^5;					// T1
+sbit INT1 = P3^3;					// INT1
+sbit DE1  = P3^2;					// INT0, UART 
+sbit TXD  = P3^1;					// UART TXD
+sbit RXD  = P3^0;					// UARD RXD
 // sbit RD   = 0xB7;
 // sbit WR   = 0xB6;
 // sbit T1   = 0xB5;
@@ -85,22 +85,31 @@ sbit TI   = 0x99;
 sbit RI   = 0x98;
 
 // IP   
-sbit PS   = 0xBC;
-sbit PT1  = 0xBB;
-sbit PX1  = 0xBA;
-sbit PT0  = 0xB9;
-sbit PX0  = 0xB8;
+sbit PS   = 0xBC;					// sbit PS  = 0xB8^4
+sbit PT1  = 0xBB;					// sbit PT1 = 0xB8^3
+sbit PX1  = 0xBA;					// sbit PX1 = 0xB8^2
+sbit PT0  = 0xB9;					// sbit PT0 = 0xB8^1
+sbit PX0  = 0xB8;					// sbit PX0 = 0xB8^0
 
 // IE   
-sbit EA   = 0xAF;
-sbit ES   = 0xAC;
-sbit ET1  = 0xAB;
-sbit EX1  = 0xAA;
-sbit ET0  = 0xA9;
-sbit EX0  = 0xA8;
+sbit EA   = 0xAF;					// sbit EA  = 0xA8^7
+sbit ES   = 0xAC;					// sbit ES  = 0xA8^4
+sbit ET1  = 0xAB;					// sbit ET1 = 0xA8^3
+sbit EX1  = 0xAA;					// sbit EX1 = 0xA8^2
+sbit ET0  = 0xA9;					// sbit ET0 = 0xA8^1
+sbit EX0  = 0xA8;					// sbit EX0 = 0xA8^0
 
 */
 
+union Bit_Field {					// all variables in union share same memory
+	
+	unsigned Flag;
+
+	Struct {		// 注意: type 必須為整數(signed or unsigned皆可)
+	unsigned UART_Tx_Busy_Flg 		: 1;			// UART transmitting	
+	unsigned PC_Tx_Pending_Flg 		: 1;
+	}
+};
 /* Bit Field: 是一種省空間的特殊 data member, 可以使用特定幾個 bit 來放 data.
 // The declaration of a bit-field has the following form inside a structure
 // 		struct {
@@ -112,67 +121,67 @@ sbit EX0  = 0xA8;
 //			unsigned int age : 1;
 //		} Flag;   
 */
-union Bit_Field {					// all variables in union share same memory
-	
-	unsigned Flag;
-	
-	Struct {
-	unsigned UART_Rx_Comp : 1;         	// 注意: type 必須為整數(signed or unsigned皆可)
-	unsigned UART_TX_Comp : 1;
-	unsigned ACP_Rx  : 1;
-	unsigned ACP_Tx  : 1;  
-	}
-};
 
 
 
+int 	ACUD_ID			
 
-
-// Declare Event Value related to  		
-#defie 	UART_Rx_Comp		0x01;
-#define UART_Tx_Comp	0x02;		
-
-// Declare UART related to  		
-#define Fosc				22.1184				// 0r 11.0592 Need to be confirmed
-#define Baudrate			9600				// ***** Need to be confirmed
-#define UART_In_Buf_Max 		5;					// ***** Need to be confirmed
-#define UART_Out_Buf_Max		5;					// ***** Need to be confirmed
-int 	UART_In_Buf_Index;
-int 	UART_Out_buf_Index;
-char 	UART_Out_Buf[UART_In_Buf_Max];
-char 	UART_In_Buf[UART_Out_Buf_Max];
-
-#define ACP_In_Buf_Max 		5;					// ***** Need to be confirmed
-#define ACP_Out_Buf_Max		5;					// ***** Need to be confirmed
-int 	ACP_In_Buf_Index;
-int 	ACP_Out_buf_Index;
-char 	ACP_Out_Buf[UART_In_Buf_Max];
-char 	ACP_Iut_Buf[UART_Out_Buf_Max];
-
-
-
-// 		
-char 	Event
 
 // Declare Status
 int 	Key_Status
 int		Temp_Status
 int 	Fan_Status
-int 	Light_status
-	
+int 	Light_Status
+
+// 		
+
+char 	Event
+
+// Declare Event Value related to  		
+
+
+// Declare related to UART 		
+#define Fosc				22.1184	// 0r 11.0592 Need to be confirmed
+#define Baudrate			9600	// ***** Need to be confirmed
+#define UART_In_Buf_Max 		5;	// ***** Need to be confirmed
+#define UART_Out_Buf_Max		5;	// ***** Need to be confirmed
+int 	UART_In_Buf_Index;
+int 	UART_Out_buf_Index;
+char 	UART_In_Buf[UART_In_Buf_Max];
+char 	UART_Out_Buf[UART_Out_Buf_Max];
+int 	*UART_Tx_Data_Ptr_Temp
+int		UART_Tx_Data_Len_Temp
+
+// Declare related to ACP
+
+#define ACP_In_Buf_Max 		5;		// ***** Need to be confirmed
+#define ACP_Out_Buf_Max		5;		// ***** Need to be confirmed
+int 	ACP_In_Buf_Index;
+int 	ACP_Out_Buf_Index;
+char 	ACP_In_Buf[UART_In_Buf_Max];
+char 	ACP_Out_Buf[UART_Out_Buf_Max];
+
+
+
+
+
+
+
+// Program
+// Initial processess
 void Init(){
-	IE=0x00;		// Disable all interrupt
+	IE=0x00;						// Disable all interrupt
 	System_Init();
 	UART_Init(22.1184,9600);
-	TIMER_Init();
+	TIMER0_NmS_Init(20);			// Timer0 20ms 
 	ACUD_Init();
-	Interrupt_Enable();	//  Leave this function being as last function in Init() 
+	Interrupt_Enable();				//  Leave this function being as last function in Init() 
 }
 
 void System_Init(){
 	
 	PCON=0x00;
-	SMOD=0;			// Baud rate selection
+	SMOD=0;							// Baud rate selection
 	/* PCON: Power Control Register: 
 			 The PCON register is used for power control and double baud rate by set 1
 		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 |
@@ -186,14 +195,9 @@ void System_Init(){
 	PWDN	省電模式，必須使用reset訊號讓其回復到一般操作模式。
 	IDL		IDL=1會使8051的clock停止，必須使用外部中斷或reset訊號使8051回復到一般操作模式。	
 	*/
-	
-	
 }
-	
-	
-	
 
-void UART_Init(float Fosc ,int Baudrate){	
+void UART_Init(float Fosc ,int Baudrate){	// include T1 init
 	
 	/* Special Function Registers Related to UART: 
 		SCON		Serial Control Register
@@ -203,8 +207,8 @@ void UART_Init(float Fosc ,int Baudrate){
 		SBUF		Serial Buffer holds the data to be transmitted and the data received 
 	*/
 	
-	SCON=0X40;		// SCON=01000000B, Mode 1 ,8 bit data and 1 stop bit, 
-	REN=1;			// SCON=01010000B, Enable serial reception
+	SCON=0X40;						// SCON=01000000B, Mode 1 ,8 bit data and 1 stop bit, 
+	REN=1;							// SCON=01010000B, Enable serial reception
 	/* SCON: Serial Control Register
 		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
 		| SM0  | SM1  | SM2  | REN  | TB8  | RB8  |  TI  |  RI  |
@@ -225,15 +229,15 @@ void UART_Init(float Fosc ,int Baudrate){
 	TI 	- 	Transmit Interrupt flag is automatically set at the moment the last bit of one byte is sent. 
 			It's a signal to the processor that the line is available for a new byte to transmit. 
 			It must be cleared from within the software.
-			傳送完畢旗號，此位元須由軟體清除
+			傳送完畢旗號，此位元須自行清除,以便等待下一個TI=1中斷出現
 	RI 	- 	Receive Interrupt flag is automatically set upon one-byte receive. 
 			It signals that byte is received and should be read quickly prior to being replaced by a new data. 
 			This bit is also cleared from within the software.
-			接收完畢旗號，此位元須由軟體清除
+			接收完畢旗號，此位元須自行清除,以便等待下一個RI=1中斷出現
 	*/
 
-	TMOD&=0x0F			// Reset Timer 1 
-	TMOD|=0x20; 		// TMOD=00100000B, Timer1 in Mode 2, Auto reload mode.
+	TMOD&=0x0F						// Reset Timer 1 
+	TMOD|=0x20; 					// TMOD=00100000B, Timer1 in Mode 2, Auto reload mode.
 	/* TMOD: Timer Mode Register:	
 		| Tmler 1					| Timer 0                   |
 		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
@@ -251,13 +255,8 @@ void UART_Init(float Fosc ,int Baudrate){
 		10-Mode 2, Auto reload mode
 		11-Mode 3, Multiple mode		
 	*/
-	
-	#if Fosc==22
-		TH1 = 256-(Fosc)/(long)(32*12*22118400); // Load timer value for baudrate generation
-	#else
-		TH1 = 256-(Fosc)/(long)(32*12*11059200); // Load timer value for baudrate generation
-	#endif
-	
+
+	TH1 = 256-(Fosc*1000000)/(long)(32*12*Baudrate); // Load timer value for baudrate generation
 	/* TH1 Value
 		|  OSC MHz | Baud Rate |    SMOD   |Timer1 Mode|Timer1 Value|
 		| 22.118MHz|   38400   |     1     |     2     |    0XFD    |   
@@ -272,7 +271,7 @@ void UART_Init(float Fosc ,int Baudrate){
 		| 11.059MHz|   2400    |     1     |     2     |    0XFD    | 	
 	*/
 
-	TR1=1;     			// TCON.TR1=1, Timer 1 start running
+	TR1=1;     						// TCON.TR1=1, Timer 1 start running
 	/* TCON: Related to Timer:
 		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
 		| TF1  | TR1  | TF0  | TR0  |      |      |      |      |
@@ -295,25 +294,26 @@ void UART_Init(float Fosc ,int Baudrate){
 		1: Set by program to enable external interrupt 1 to be triggered by a falling edge signal to generate an interrupt.
 	*/
 	
-	UART_Inbuf_Index=0;
-	UART_Outbuf_Index=0;
+	UART_In_Buf_Index=0;
+	UART_Out_Buf_Index=0;
+
 }
 
-void Timer0_Init(){		// 10ms timer
+void TIMER0_NmS_Init(int N){		// NmS timer
 
 
-	TMOD&=0xF0;	// Clear Timer 0 
-	TMOD|=0x01; 	// Mode 1, 16 bit timer/count mode	
+	TMOD&=0xF0;						// Clear Timer 0 
+	TMOD|=0x01; 					// Mode 1, 16 bit timer/count mode	
 	
-	#if Fosc==22	
-		TH0=(65536-(10*1000/(22118400/12)))/256;
-		TL0=(65536-(10*1000/(22118400/12))%256;	
-	#else
-		TH0=(65536-(10*1000/(11059000/12)))/256;
-		TL0=(65536-(10*1000/(11059000/12)))%256;
+	#if Fosc==22.1184	
+		TH0=(65536-(N*1000/(Fosc*1000000/12)))/256;
+		TL0=(65536-(N*1000/(Fosc*1000000/12))%256;	
+	#else	// Fosc==11.0952
+		TH0=(65536-(N*1000/(Fosc*1000000/12)))/256;
+		TL0=(65536-(N*1000/(Fosc*1000000/12)))%256;
 	#endif
 	
-	TR0=1;;			// TCON.TR0=1, Timer 0 start running
+	TR0=1;;							// TCON.TR0=1, Timer 0 start running
 	/* TCON: Related to Timer:
 		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
 		| TF1  | TR1  | TF0  | TR0  |      |      |      |      |
@@ -335,11 +335,17 @@ void Timer0_Init(){		// 10ms timer
 		0: Set by program to enable external interrupt 1 to be triggered by a low-level signal to generate an interrupt.
 		1: Set by program to enable external interrupt 1 to be triggered by a falling edge signal to generate an interrupt.
 	*/
+}
+
+void ACUD_Init(){
+	
+	ACUD_ID = P0;					// 
+	
 }
 
 void Interrupt_Enable(){
 	
-	IP=0x00;		// Default priority
+	IP=0x00;						// Default priority
 	/* Interrupt Priority 
 	| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 	
 	| RSV  | RSV  |	PT2	 | PS	| PT1  | PX1  | PT0	 | PX0  |
@@ -353,10 +359,10 @@ void Interrupt_Enable(){
 	PX0	External 0
 	*/
 
-	ES=1;			// IE.ES,  Enable Serial Interrupt, UART comm. with PC
-	ET0=1;			// IE.ET0, Enable Timer0 Interrupt, 10ms period
-	EX1=1;			// IE.EX1, Enable Ext 1 Interrupt, Serial comm. with ACP
-	EA=1;			// IE.EA,  Enable all interrupt
+	ES=1;							// IE.ES,  Enable Serial Interrupt, UART comm. with PC
+	ET0=1;							// IE.ET0, Enable Timer0 Interrupt, 10ms period
+	EX1=1;							// IE.EX1, Enable Ext 1 Interrupt, Serial comm. with ACP
+	EA=1;							// IE.EA,  Enable all interrupt
 	/* Interrupt Enable
 	| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
 	|  EA  | RSV  |	ET2  |	ES	| ET1  | EX1  |	ET0	 | EX0  |
@@ -381,64 +387,48 @@ void Interrupt_Enable(){
 	
 }	
 
-void Timer_10ms() interrupt 1 {		// Timer0 INT vector=000Bh
+
+
+// ISRs
+void IIMER0_NmS() interrupt 1 {		// Timer0 INT vector=000Bh
 	
-	Key_Detect();				// Udate Key present status
-	ADC_Detect();				// Update Temperture status
+	Key_Detect();					// Udate Key present status
+	ADC_Detect();					// Update Temperture status
 	
-	
-	// Check Semaphore 
-	
-	
-	if (Flag.UART_Rx_Comp==1){
-		if (Event==Null){				// Make sure previous event had been done
-			Event=UART_Rx_Comp;			// Updating Event for ACUD_StateEvent()
-			Flag.UART_Rx_Comp=0;
-		    ES=1;						// IE.ES,  Enable Serial Interrupt, UART comm. with PC
-		{
-	}	
-	
-	
-	
-	if (Flag.UART_Tx_Comp==1){
-		if (Event==Null) {				// Make sure previous event had been done
-			Event=UART_Tx_Comp;			// Updating Event for ACUD_StateEvent()
-			Flag.UART_Tx_Comp=0;
-		}
+
+	if ( FLAG.PC_Tx_Pending_Flg==1){
+		PC_Tx_Handler(UART_Tx_Data_Ptr_Temp, UART_Tx_Data_Len_Temp){
+		
+	}
 	
 }
 
-void UART_Simulator() interrupt 2 { // EXT1 INT vector=0013h, UART Simulator
+void EXT1_ACP_Comm() interrupt 2 { 	// EXT1 INT, vector=0013h, UART Simulator
 	
-	// sbit RxD0 = P3^7;		// RD
-	// sbit TxD0 = P3^6;		// WR
-	// sbit DE0  = P3^5;		// T1
-	// sbit INT1 = P3^3;		// INT1, connect to pin RxD0
-
-
-
-
-
+	// sbit RxD0 = P3^7;			// RD
+	// sbit TxD0 = P3^6;			// WR
+	// sbit DE0  = P3^5;			// T1
+	// sbit INT1 = P3^3;			// INT1, connect to pin RxD0
 	
 }
 
+void UART_PC_Comm() interrupt 4 { 	// UART INT, vector=0023h
+	
+	EA=0;							// Suspend all int
+	
+	if ( RI ){ 						// SCON.RI, RI=1 means new content have received                       	
+	
 
-void UART_ISR() interrupt 4 { 		// Serial INT vector=0023h
-	
-	EA=0;				// Suspend all int
-	
-	if ( RI ){ 			// SCON.RI, RI=1 means new content have received                       	
-	
-		RI = 0;			// SCON.RI=0, UART_Rx ready to receive again
-	
-		if( UART_In_Buf_Index <= UART_Inbuf_Max-1){
+		// Flag.UART_Rx_Busy_Flg=1
+		if( UART_In_Buf_Index < UART_In_Buf_Max){
 			UART_In_Buf[UART_Inbuf_Index]=SBUF;	
-			UART_In_Buf_Index++;	
+			UART_In_Buf_Index++;
+			RI = 0;					// SCON.RI=0, force UART_Rx ready to receive again
 		}
-		if ( UART_In_Buf_Index = UART_Inbuf_Max-1){
-			UART_In_Buf_Index=0;
-			Flag.UART_Rx_Comp=1;
-			ES=0;		// IE.ES,  Disable Serial Interrupt, UART comm. with PC
+		else {	// (UART_Inbuf_Index >= UART_Inbuf_Max 
+
+				UART_In_Buf_Index=0;// Reset UART_Inbuf_Index
+				Flag.UART_Rx_Busy_Flg=0	// UART Rx busy
 		}
 	}
 
@@ -446,45 +436,61 @@ void UART_ISR() interrupt 4 { 		// Serial INT vector=0023h
 	// TI should be set and UART_Outbuf_Index should be reset by program,
 	if ( TI ){    		// SCON.TI, TI=1 means previous content have been sent.   
 		
-		TI = 0;							// SCON.TI=0, UART_Tx ready to sent
+		Flag.UART_TX_Busy_Flg=1;		
 		
-		if ( UART_Out_Buf_Index <= UART_Out_Buf_Max-1 ){
-			SBUF = UART_Outbuf[UART_Out_Buf_Index];
+		if ( UART_Out_Buf_Index < UART_Out_Buf_Max ){
+			SBUF = UART_Out_Buf[UART_Out_Buf_Index];
 			UART_Out_Buf_Index++;
-			
+			TI = 0;					// SCON.TI=0, force UART_Tx ready to sent again
 		}		
-		if ( UART_Out_Buf_Index = UART_Outbuf_Max-1 ){
-				UART_Out_Buf_Index=0;		// Reset UART_Inbuf_Inde
-				Flag.UART_Tx_Comp=1;				// Sent semaphore to Timer_100ms to start 100ms delay
+		else {						// UART Tx completed, UART_Outbuf_Index >= UART_Outbuf_Max 
 	
-			}
+			UART_Out_Buf_Index=0;	// Reset UART_Inbuf_Index
+			Flag.UART_TX_Busy_Flg = 0;	// UART Tx busy
+			
 		}	
 	}
 	
-	EA=1;					// Resume all int
+	EA=1;							// Resume all int
 }		
 
-void Sent_To_UART(){
+
+void PC_Tx_Handler(int *Tx_Data_Ptr, int Len){
 	
-	// UART_Outbuf need to be prepared completely
-	UART_Out_Buf_Index=0x00;
-	TI = 1; 				// Triger UART_ISR() to start UART_Tx 
+	// UART_Out_Buf[] need to be prepared completely
+	if(!(FLAG.UART_TX_Busy_Flg) == 1){// UART Tx avilable
+		
+		for (i=0,i<Len,i++) {
+			UART_Out_Buf[i]=*Tx_Data;
+			Tx_Data++;
+		}
+		
+		UART_Out_Buf_Index=0;		// UART_Out_Buf should be prepared already
+		FLAG.PC_Tx_Pending_Flg = 0;
+		TI=1; 						// Triger UART_ISR() to start UART_Tx 
+	}
+	else {
+		UART_Tx_Data_Ptr_Temp=Tx_Data_Ptr;
+		UART_Tx_Data_Len_Temp=Len;
+		FLAG.PC_Tx_Pending_Flg = 1;	// Handover to ISR TIMER0_NmS() 
+	}
+	
 	
 }
 
+// Period Delay	
+void mS_Delay(int N){				//	Delay t*1ms 
 	
-void mS_Delay(int N){		//	Delay t*1ms 
-	
-	int i,j;				// 宣告整數變數i,j,N 
-	for (i=0;i<N;i++)		// 計數N次,延遲 N*1ms 
-	#if Fosc==22118400		// 延遲 t*1ms @22MHz
+	int i,j;						// 宣告整數變數i,j,N 
+	for (i=0;i<N;i++)				// 計數N次,延遲 N*1ms 
+	#if Fosc==22118400				// 延遲 t*1ms @22MHz
 		for (j=0;j<1600;j++);	
-	#else					// 延遲 t*1ms @11MHz
+	#else							// 延遲 t*1ms @11MHz
 		for (j=0;j<800;j++);	 
 	#endif
 }
 
-void uS_Delay (int N) {		//52us, 0r 104us
+void uS_Delay (int N) {				// 52us, 0r 104us
 
 
 
@@ -494,7 +500,9 @@ void uS_Delay (int N) {		//52us, 0r 104us
 }
 
 
-PC_Event_Handler() {
+
+
+PC_StateEvent() {
 
 	While( Strcpm (           ,UART_In_Buf) = 0) {
 
@@ -502,50 +510,41 @@ PC_Event_Handler() {
 	}
 
 
-
-
-
-
-
 }
 
-PC_Event_Handler() {
+
+ACP_StateEvent() {
 
 
 
 }
 
 
-
-ACUD_Event_Handler() {
+ACUD_StateEvent() {
 	
-		Event=0x00; 
-
+	
+	
 
 }
 
 
+
+
+// Main Program
 Main() {
 
 	Init();
 
 	while(1){
 	
-		IF(!(strcmp(UART_In_Buf,0))){		// if UART_In_Buf != Empty
-			PC_Event_Handler();
-		}
-		
-		IF(!(strcmp(ACP_In_Buf,0))){		// if ACP_In_Buf != Empty
-			ACP_Event_Handler();
-		}
-		
-		if(Event) {
-			ACUD_Event_Handler();
-		}
+		PC_StateEvent();
+		ACP_StateEvent();
+		ACUD_StateEvent();
+
 	
-		Air_Manipulate();		// depend on the command in Temo_Status 
-		Fan_Manipulate();		// depend on the command in Fan_Status 
-		Light_Manipulate();		// depend on the command in Light_Status 
+		Tempeture_Manipulate();			// depend on the command in Temo_Status 
+		Fan_Manipulate();			// depend on the command in Fan_Status 
+		Light_Manipulate();			// depend on the command in Light_Status 
 	
 	}
 	
