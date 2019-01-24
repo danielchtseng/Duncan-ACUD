@@ -1,7 +1,7 @@
 
 // 8051 C 
 // ACUD
-// Ver: W044-1517
+// Ver: W044-1605
 
 
 #include<reg51.h>
@@ -106,8 +106,11 @@ union Bit_Field {					// all variables in union share same memory
 	unsigned Flag;
 
 	Struct {		// 注意: type 必須為整數(signed or unsigned皆可)
-	unsigned UART_Tx_Busy_Flg 		: 1;			// UART transmitting	
+
+	unsigned UART_Tx_Busy_Flg 		: 1;			// UART transmitting
+	unsigned PC_Rx_Appeared_Flg 		: 1;
 	unsigned PC_Tx_Pending_Flg 		: 1;
+	
 	}
 };
 /* Bit Field: 是一種省空間的特殊 data member, 可以使用特定幾個 bit 來放 data.
@@ -428,7 +431,8 @@ void UART_PC_Comm() interrupt 4 { 	// UART INT, vector=0023h
 		else {	// (UART_Inbuf_Index >= UART_Inbuf_Max 
 
 				UART_In_Buf_Index=0;// Reset UART_Inbuf_Index
-				Flag.UART_Rx_Busy_Flg=0	// UART Rx busy
+				Flag.UART_Rx_Busy_Flg = 0	// UART Rx busy
+				Flag_PC_Rx_Appeared_Flg = 1; // 
 		}
 	}
 
@@ -454,10 +458,10 @@ void UART_PC_Comm() interrupt 4 { 	// UART INT, vector=0023h
 	EA=1;							// Resume all int
 }		
 
-
+// Sent data to PC, the data should be passeed through a pointer
 void PC_Tx_Handler(int *Tx_Data_Ptr, int Len){
 	
-	// UART_Out_Buf[] need to be prepared completely
+	// data need to be port to UART_Out_Buf[] before by way of UART
 	if(!(FLAG.UART_TX_Busy_Flg) == 1){// UART Tx avilable
 		
 		for (i=0,i<Len,i++) {
@@ -504,16 +508,44 @@ void uS_Delay (int N) {				// 52us, 0r 104us
 
 PC_StateEvent() {
 
-	While( Strcpm (           ,UART_In_Buf) = 0) {
+	while(Flag.PC_Rx_Appeared_Flg){
+
+		if ( Strcpm ( UART_In_Buf," string ") = 0) {
 
 
+
+
+		}else if Strcpm ( UART_In_Buf," string ") = 0){
+			
+			
+			
+			
+		}else if Strcpm ( UART_In_Buf," string ") = 0){
+			
+			
+			
+			
+		}else if Strcpm ( UART_In_Buf," string ") = 0){	
+		
+		
+		
+		
+		}else if Strcpm ( UART_In_Buf," string ") = 0){
+			
+		
+		
+		else {
+		
+			Flag.PC_Rx_Appeared_Flg = 0
+		}
+		
 	}
-
-
 }
 
 
 ACP_StateEvent() {
+
+
 
 
 
