@@ -1,10 +1,13 @@
 
-// 8051 C 
-// ACUD
-// Ver: W045-H1525
+// 8051 Keil C 
+// ACUD 
+// Auther: Duncan Tseng
+// Ver: W047-H1600
 
+// @@@@@@@@@@ Daclare @@@@@@@@@@
 
 #include <reg51.h>
+
 /* BYTE Register
 sfr P0   = 0x80;
 sfr P1   = 0x90;
@@ -93,20 +96,21 @@ sbit ET0  	= 0xA9;					// sbit ET0 = 0xA8^1
 sbit EX0  	= 0xA8;					// sbit EX0 = 0xA8^0
 */
 
+
+
+// ***** Declare related to Communication
 union Bit_Field {					// all variables in union share same memory
 	
 	unsigned Flag;
-	
 	Struct {		// 注意: type 必須為整數(signed or unsigned皆可)
-		
+		// relate to PC
 		unsigned UART_Tx_Busy_Flg 		: 1;			// UART transmitting		
 		unsigned PC_Rx_Appeared_Flg 	: 1;
 		unsigned PC_Tx_Pending_Flg 		: 1;
-		
+		// relate to ACP
 		unsigned IOSerial_Tx_Busy_Flg 	: 1;		
 		unsigned ACP_Rx_Appeared_Flg 	: 1;		
 		unsigned ACP_Tx_Pending_Flg 	: 1;
-	
 	}
 };
 /* Bit Field: 是一種省空間的特殊 data member, 可以使用特定幾個 bit 來放 data.
@@ -118,23 +122,7 @@ union Bit_Field {					// all variables in union share same memory
 // For example
 //      struct {
 //			unsigned int age : 1;
-//		} Flag;   
-*/
-
-
-
-int 	ACUD_ID			
-
-
-// Declare Status
-int 	Key_Status
-int		Temp_Status
-int 	Fan_Status
-int 	Light_Status
-
-// 		
-
-
+//		} Flag;   						*/
 
 // Declare related to UART 		
 #define Fosc				22.1184	// 0r 11.0592 Need to be confirmed
@@ -145,35 +133,39 @@ int 	UART_In_Buf_Index;
 int 	UART_Out_buf_Index;
 char 	UART_In_Buf[UART_In_Buf_Max];
 char 	UART_Out_Buf[UART_Out_Buf_Max];
-int 	*UART_Tx_Data_Ptr_Temp
-int		UART_Tx_Data_Len_Temp
+int 	*UART_Tx_Data_Ptr_Temp;
+int		UART_Tx_Data_Len_Temp;
 
 // Declare related to ACP
-
+// related to IOSerial 
 int 	ACP_RBUF;
 int 	ACP_TBUF;
-#define ACP_In_Buf_Max 		5;		// ***** Need to be confirmed
-#define ACP_Out_Buf_Max		5;		// ***** Need to be confirmed
+int 	ACP_TBUF_Temp;
+// related to Handler 
 int 	ACP_In_Buf_Index;
 int 	ACP_Out_Buf_Index;
 char 	ACP_In_Buf[ACP_In_Buf_Max];
 char 	ACP_Out_Buf[ACP_Out_Buf_Max];
+#define ACP_In_Buf_Max 		5;		// ***** Need to be confirmed
+#define ACP_Out_Buf_Max		5;		// ***** Need to be confirmed
+
+
+
+// ***** Declare related to ADC
+float 	LSB		// Least significant bit, 
+
+
+
+// ***** Declare related to ACUD
+int 	ACUD_ID	
 
 
 
 
 
+// @@@@@@@@@@ Program @@@@@@@@@@
 
-// Program
-// Initial processess
-void Init(){
-	IE=0x00;						// Disable all interrupt
-	System_Init();
-	UART_Init(22.1184,9600);
-	TIMER0_NmS_Init(20);			// Timer0 20ms 
-	ACUD_Init();
-	Interrupt_Enable();				//  Leave this function being as last function in Init() 
-}
+// ##### Initialization 
 
 void System_Init(){
 	
@@ -296,6 +288,12 @@ void UART_Init(float Fosc ,int Baudrate){	// include T1 init
 	DE1_PC = 0;						// RX485 Rx enable
 }
 
+void IOSerial_ACP_Init(){
+	
+	Serial_TXD0 = 1;				// Initial "1" on P3.6(WR)
+	FLAG.ACP_Tx_Pending_Flg = 0;
+}
+
 void TIMER0_NmS_Init(int N){		// NmS timer
 
 	TMOD&=0xF0;						// Clear Timer 0 
@@ -332,52 +330,19 @@ void ACUD_Init(){
 	
 }
 
-void Interrupt_Enable(){
-	
-	IP=0x00;						// Default priority
-	/* Interrupt Priority 
-	| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 	
-	| RSV  | RSV  |	PT2	 | PS	| PT1  | PX1  | PT0	 | PX0  |
-	RSV	Reserve
-	RSV	Reserve
-	PT2	Timer2 
-	PS	Serial
-	PT1	Timer1 
-	PX1	External 1 
-	PT0	Timer0 
-	PX0	External 0
-	*/
-	ES=1;							// IE.ES,  Enable Serial Interrupt, UART comm. with PC
-	ET0=1;							// IE.ET0, Enable Timer0 Interrupt, 10ms period
-	EX1=1;							// IE.EX1, Enable Ext 1 Interrupt, Serial comm. with ACP
-	EA=1;							// IE.EA,  Enable all interrupt
-	/* Interrupt Enable
-	| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
-	|  EA  | RSV  |	ET2  |	ES	| ET1  | EX1  |	ET0	 | EX0  |
-	EA	Enable
-	RSV	Reserve
-	ET2	Timer 2 
-	ES	Serial 
-	ET1	Timer 1
-	EX1	Ecternal 1
-	ET0	Timer 0
-	EX0	External 0
-	*/
-	/* Interrupt Vector(中斷向量)
+
+
+// ##### ISRs
+
+/* Interrupt Vector(中斷向量)
 		| INT Number |  Description  |	Address |
 		|      0     | EXTERNAL INT0 |	 0003h  |   
 	    |      1	 |TIMER/COUNTER 0|	 000Bh  |
 	    |      2	 | EXTERNAL INT 1|	 0013h  |
 		|	   3	 |TIMER/COUNTER 1|	 001Bh  |
 		|      4	 |  SERIAL PORT	 |   0023h  |
-		|      5	 |TIMER/COUNTER 2|	 002Bh  |
-	*/
-	
-}	
-
-
-
-// ISRs
+		|      5	 |TIMER/COUNTER 2|	 002Bh  | */
+		
 void IIMER0_NmS() interrupt 1 {		// Timer0 INT vector=000Bh
 	
 	Key_Detect();					// Udate Key present status
@@ -413,7 +378,7 @@ void IOSerial_Rx_ACP() interrupt 2 {// EXT1 INT, vector=0013h, UART Simulator
 	} 
 }
 
-void UART_RxTx_PC() interrupt 4 { 		// UART INT, vector=0023h
+void UART_RxTx_PC() interrupt 4 { 	// UART INT, vector=0023h
 	
 	EA=0;							// Suspend all interrupt
 	
@@ -448,11 +413,41 @@ void UART_RxTx_PC() interrupt 4 { 		// UART INT, vector=0023h
 			485Tx_PC = 0; 				// T1, RX485 Tx Disable (=Rx enable)
 		}	
 	}
+	
 	EA=1;							// Resume all interrupt
 }		
 
-// Sent data to PC, the data should be passeed through a pointer
-void PC_Tx_Handler(int *Tx_Data_Ptr, int Len){
+
+
+// ##### Transmitting data to PDC & ACP
+void IOSerial_Tx_ACP(){				// Call by Tx_Handler_ACP()
+	int i;
+	
+	for (ACP_Out_Buf_Index=0;i<ACP_Out_Buf_Max,ACP_Out_Buf_Index++) {
+		
+		ACP_TBUF = ACP_Out_Buf[ACP_Out_Buf_Index];
+		EA = 0;						// Suspending all interrupt happen during every single byte transmitting
+		Serial_TXD0 = 0;			// sent Start bit "0" on P3.6(WR)
+		uS_Delay(104);
+		for (i=0;i<8; i++) {
+			ACP_TBUF_Temp  = ACP_TBUF
+			ACP_TBUF_Temp &= 0x80;
+			if (ACP_TBUF_Temp == 0x80) {
+				Serial_TXD0 = 1;	// sent out "1"
+			}else {
+				Serial_TXD0 = 0;	// Sent out "0"
+			}
+			ACP_TBUF << 1; 			// ACP_TBUF left shift 1 bit 
+			uS_Delay(104);
+		}
+		Serial_TXD0 = 1;			// sent Stop bit "1" on P3.6(WR)
+		uS_Delay(104);				// 
+		EA = 1;						// Resume all interrupt
+	}
+}
+
+void Tx_Handler_PC(int *Tx_Data_Ptr, int Len){
+	
 	int i;
 	// data need to be port to UART_Out_Buf[] before by way of UART
 	if(!(FLAG.UART_TX_Busy_Flg) == 1){// UART Tx avilable
@@ -474,8 +469,7 @@ void PC_Tx_Handler(int *Tx_Data_Ptr, int Len){
 	}
 }
 
-
-void ACP_Tx_Handler(int *Tx_Data_Ptr, int Len){
+void Tx_Handler_ACP(int *Tx_Data_Ptr, int Len){
 
 	// sbit Serial_RXD0 = P3^7;		// RD
 	// sbit Serial_TXD0	= P3^6;		// WR
@@ -505,35 +499,14 @@ void ACP_Tx_Handler(int *Tx_Data_Ptr, int Len){
 
 ]
 
-// ******************** W045-H1525 **********************
-void IOSerial_Tx_ACP(){
-	int i,j;
-	for (i=0;i<ACP_Out_Buf_Max,i++) {
-		
-		ACP_TBUF = ACP_Out_Buf[ACP_Out_Buf_Index];
-		sbit Serial_TXD0 = 0		// sent Start bit "0"
-		uS_Delay(104);
-		
-		for (j=0;j<8; j++) {
-			ACP_TBUF &= 0x80;
-			if (ACP_TBUF == 0x80) {
-				sbit Serial_TXD0 = 1;
-			}else {
-				sbit Serial_TXD0 = 0;
-			}
-			ACP_TBUF << 1; 			// ACP_TBUF left shite 1 bit 
-			uS_Delay(104);
-		}
-	}
-}
 
 
-// Period Delay	
-void mS_Delay(int N){				//	Delay t*1ms 
+// ##### Period Delay	
+void mS_Delay(int m){				//	Delay ms 
 	
 	int i,j;						// 宣告整數變數i,j,N 
 	
-	for (i=0;i<N;i++)				// 計數N次,延遲 N*1ms 
+	for (i=0;i<m;i++)				// 計數N次,延遲 N*1ms 
 	#if Fosc==22.1184				// 延遲 t*1ms @22.1184MHz
 		for (j=0;j<1600;j++);	
 	#else							// 延遲 t*1ms @11.0952MHz
@@ -541,7 +514,7 @@ void mS_Delay(int N){				//	Delay t*1ms
 	#endif
 }
 
-void uS_Delay (int N) {				// 52us, 0r 104us
+void uS_Delay (int u){				// Delay us, 52us or 104us
 
 
 
@@ -553,7 +526,67 @@ void uS_Delay (int N) {				// 52us, 0r 104us
 
 
 
-void PC_StateEvent() {
+
+// ##### Main Program #####
+
+Main() {
+
+	IE=0x00;						// Set all interrupt disable
+	
+	// ***** Initialization manipulate
+	System_Init();
+	UART_Init(22.1184,9600);
+	IOSerial_ACP_Init();
+	TIMER0_NmS_Init(20);			// Timer0 20ms 
+	ACUD_Init();
+	Interrupt_Enable();				// Put this function being as last function 
+
+
+// ##### Interrupt initial manipulate
+			
+	/* Interrupt Priority: 	IP
+	| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 	
+	| RSV  | RSV  |	PT2	 | PS	| PT1  | PX1  | PT0	 | PX0  |
+	RSV	Reserve
+	RSV	Reserve
+	PT2	Timer2 
+	PS	Serial
+	PT1	Timer1 
+	PX1	External 1 
+	PT0	Timer0 
+	PX0	External 0 */
+	IP=0x00;						// Default priority
+							
+	/* Interrupt Enable: 	IE
+	| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
+	|  EA  | RSV  |	ET2  |	ES	| ET1  | EX1  |	ET0	 | EX0  |
+	EA	Enable
+	RSV	Reserve
+	ET2	Timer 2 
+	ES	Serial 
+	ET1	Timer 1
+	EX1	Ecternal 1
+	ET0	Timer 0
+	EX0	External 0	*/
+	ES=1;							// IE.ES,  Enable Serial Interrupt, UART comm. with PC
+	ET0=1;							// IE.ET0, Enable Timer0 Interrupt, 10ms period
+	EX1=1;							// IE.EX1, Enable Ext 1 Interrupt, Serial comm. with ACP
+	EA=1;							// IE.EA,  Enable all interrupt							
+
+	while(1){
+	
+		PC_StateEvent();
+		ACP_StateEvent();
+		ACUD_StateEvent();
+
+		Air_Manipulate();			// depend on the command in Fan_Status 
+	}
+}
+
+
+// ##### Event manipulate 
+// PC Event manipulate
+void PC_StateEvent(){
 
 	while(Flag.PC_Rx_Appeared_Flg){
 
@@ -562,26 +595,22 @@ void PC_StateEvent() {
 
 
 			break;
-		}
-		}else if Strcpm ( UART_In_Buf," string ") = 0){
+		} else if Strcpm ( UART_In_Buf," string ") = 0){
 			
 			
 			
 			break;
-		}
-		}else if Strcpm ( UART_In_Buf," string ") = 0){
+		} else if Strcpm ( UART_In_Buf," string ") = 0){
 			
 			
 			
 			break;
-		}
-		}else if Strcpm ( UART_In_Buf," string ") = 0){	
+		} else if Strcpm ( UART_In_Buf," string ") = 0){	
 		
 		
 		
 			break;
-		}
-		}else if Strcpm ( UART_In_Buf," string ") = 0){
+		} else if Strcpm ( UART_In_Buf," string ") = 0){
 			
 		
 			break;
@@ -590,8 +619,8 @@ void PC_StateEvent() {
 	}
 }
 
-
-void ACP_StateEvent() {
+// ACP Event manipulate
+void ACP_StateEvent(){
 
 	while(Flag.ACP_Rx_Appeared_Flg){
 
@@ -627,8 +656,8 @@ void ACP_StateEvent() {
 
 }
 
-
-void ACUD_StateEvent() {
+// ACUD Event manipulate
+void ACUD_StateEvent(){
 	
 	
 	
@@ -636,24 +665,7 @@ void ACUD_StateEvent() {
 }
 
 
-
-
-// Main Program
-Main() {
-
-	Init();
-
-	while(1){
-	
-		PC_StateEvent();
-		ACP_StateEvent();
-		ACUD_StateEvent();
-
-	
-		Tempeture_Manipulate();			// depend on the command in Temo_Status 
-		Fan_Manipulate();			// depend on the command in Fan_Status 
-		Light_Manipulate();			// depend on the command in Light_Status 
-	
-	}
-	
+void Air_Manipulate(){
+	Tempeture_Detect();		// depend on the command in Temo_Status 
+	Fan_Adjust();			// depend on the command in Fan_Status 
 }
