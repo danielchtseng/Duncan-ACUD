@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver: W047-H1600
+// Ver: W047-H2050
 
 // @@@@@@@@@@ Daclare @@@@@@@@@@
 
@@ -44,10 +44,10 @@ sbit P    	= 0xD0;
 
 // Port 1: 
 // SPI(Serial Peripheral Interface) Simulator
-sbit DO   	= P1^0;
-sbit CS   	= P1^1;
-sbit SCLK 	= P1^2;
-sbit DIN  	= P1^3;
+sbit SPI_DO  	= P1^0;
+sbit SPI_CS   	= P1^1;
+sbit SPI_SCLK 	= P1^2;
+sbit SPI_DIN  	= P1^3;
 
 // Port 3: 
 // Serial Simulator
@@ -140,7 +140,6 @@ int		UART_Tx_Data_Len_Temp;
 // related to IOSerial 
 int 	ACP_RBUF;
 int 	ACP_TBUF;
-int 	ACP_TBUF_Temp;
 // related to Handler 
 int 	ACP_In_Buf_Index;
 int 	ACP_Out_Buf_Index;
@@ -419,7 +418,7 @@ void UART_RxTx_PC() interrupt 4 { 	// UART INT, vector=0023h
 
 
 
-// ##### Transmitting data to PDC & ACP
+// ##### Transmitting data to PDC,ACP and ADC
 void IOSerial_Tx_ACP(){				// Call by Tx_Handler_ACP()
 	int i;
 	
@@ -430,14 +429,12 @@ void IOSerial_Tx_ACP(){				// Call by Tx_Handler_ACP()
 		Serial_TXD0 = 0;			// sent Start bit "0" on P3.6(WR)
 		uS_Delay(104);
 		for (i=0;i<8; i++) {
-			ACP_TBUF_Temp  = ACP_TBUF
-			ACP_TBUF_Temp &= 0x80;
-			if (ACP_TBUF_Temp == 0x80) {
+			if (ACP_TBUF & 0x80) {
 				Serial_TXD0 = 1;	// sent out "1"
 			}else {
 				Serial_TXD0 = 0;	// Sent out "0"
 			}
-			ACP_TBUF << 1; 			// ACP_TBUF left shift 1 bit 
+			ACP_TBUF <<= 1; 			// ACP_TBUF left shift 1 bit 
 			uS_Delay(104);
 		}
 		Serial_TXD0 = 1;			// sent Stop bit "1" on P3.6(WR)
@@ -498,6 +495,23 @@ void Tx_Handler_ACP(int *Tx_Data_Ptr, int Len){
 	}
 
 ]
+
+void Tx_Handler_ADC(int SPI_Data){
+	int i;
+	SPI_CS = 1;
+	SPI_SCLK = 0;
+	
+	if (i=0;i<8;i++){
+		if(SPI_Data & 0x80){
+			SPI_DO = 1;
+		}else {
+			SPI_DO = 0;
+		}
+		SPI_SCLK = 1;
+		SPI_SCLK = 0;
+		SPI_Data <<= 1 ;
+	}
+}
 
 
 
@@ -651,9 +665,6 @@ void ACP_StateEvent(){
 		
 		Flag.ACP_Rx_Appeared_Flg = 0
 	}
-
-
-
 }
 
 // ACUD Event manipulate
