@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver: W052-H0830
+// Ver: W052-H1810
 
 // @@@@@@@@@@ Daclare @@@@@@@@@@
 
@@ -152,7 +152,8 @@ char 	ACP_Out_Buf[ACP_Out_Buf_Max];
 
 // ***** Declare related to ADC
 
-unsigned int   	SPI_Data		// 2 bytes
+unsigned int   	SPI_ConvertedData	// 2 bytes
+int 			ConvertedData		// 
 
 
 // ***** Declare related to ACUD
@@ -164,63 +165,6 @@ int 	ACUD_ID
 
 // @@@@@@@@@@ Program @@@@@@@@@@
 
-// ##### Initialization 
-void System_Init(){
-	
-	PCON=0x00;
-	SMOD=0;							// Baud rate selection
-	/* PCON: Power Control Register: 
-			 The PCON register is used for power control and double baud rate by set 1
-		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 |
-		| MOD  | RSV2 |	RSV1 | RSV0	| GF1  | GF0  |	PWDN | IDL  |
-	SMOD	The SMOD bit is used to decide the baud rate in serial port operating modes 1, 2 or 3.
-	RSV2	Reserve 
-	RSV2	Reserve 
-	RSV2	Reserve 
-	GF1		一般用途位元，可當一個位元變數使用。
-	GF0		一般用途位元，可當一個位元變數使用。
-	PWDN	省電模式，必須使用reset訊號讓其回復到一般操作模式。
-	IDL		IDL=1會使8051的clock停止，必須使用外部中斷或reset訊號使8051回復到一般操作模式。	
-	*/
-}
-
-void TIMER0_NmS_Init(int N){		// NmS timer
-
-	TMOD&=0xF0;						// Clear Timer 0 
-	TMOD|=0x01; 					// Mode 1, 16 bit timer/count mode	
-	TH0=(65536-(N*1000/(Fosc*1000000/12)))/256;
-	TL0=(65536-(N*1000/(Fosc*1000000/12))%256;	
-	TR0=1;;							// TCON.TR0=1, Timer 0 start running
-	/* TCON: Related to Timer:
-		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
-		| TF1  | TR1  | TF0  | TR0  |      |      |      |      |
-	TFx: Timer x OverFlow flag
-		0 = Timer has not overflowed/rolled over
-		1 = Timer has overflowed/rolled over	
-	TRx: Timer 1/0 run control
-		0 = Timer not running
-		1 = Timer running|
-	*/
-	/* TCON: Related to External Interrupt: 
-	
-		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
-		|      |      |      |      | IE1  | IT1  | IE0  | IT0  |
-	IEx: External Interrupt(Int 0X13) Flag
-		1 = Set by External Interrupt,when a high-to-low edge signal is received on port 3.3/3.2 (INT1/INT0)
-		0 = Clear when processor vectors to interrupt service routine at program address 0013h. 
-	ITx: External Interrupt Triger Control
-		0: Set by program to enable external interrupt 1 to be triggered by a low-level signal to generate an interrupt.
-		1: Set by program to enable external interrupt 1 to be triggered by a falling edge signal to generate an interrupt.
-	*/
-}
-
-void ACUD_Init(){
-	
-	ACUD_ID = P2;					// 
-	
-}
-
-
 
 // ##### Period 	
 /* Interrupt Vector(中斷向量)
@@ -231,7 +175,7 @@ void ACUD_Init(){
 		|	   3	 |TIMER/COUNTER 1|	 001Bh  |
 		|      4	 |  SERIAL PORT	 |   0023h  |
 		|      5	 |TIMER/COUNTER 2|	 002Bh  | */
-		
+	
 void IIMER0_NmS() interrupt 1 {		// Timer0 INT vector=000Bh
 	
 	Key_Detect();					// Udate Key present status
@@ -271,68 +215,6 @@ void uS_Delay (int u){				// Delay us, 52us or 104us
 
 
 // ##### PC TxRx
-void PC_Tx_Handler(int *Tx_Data_Ptr, int Len){
-	
-	int i;
-	// data need to be port to UART_Out_Buf[] before by way of UART
-	if(!(FLAG.UART_TX_Busy_Flg) == 1){// UART Tx avilable
-	
-		Flag.UART_TX_Busy_Flg = 1; 
-
-		for (i=0,i<Len,i++) {
-			UART_Out_Buf[i]=*Tx_Data_Ptr;
-			Tx_Data_Ptr++;
-		}
-		UART_Out_Buf_Index = 0;		// Initial UART_Out_Buf_Index
-		FLAG.PC_Tx_Pending_Flg = 0;
-		TI=1; 						// Triger UART_ISR() to start UART_Tx 
-	}
-	else {
-		UART_Tx_Data_Ptr_Temp=Tx_Data_Ptr;
-		UART_Tx_Data_Len_Temp=Len;
-		FLAG.PC_Tx_Pending_Flg = 1;	// Handover to ISR TIMER0_NmS() 
-	}
-}
-
-void PC_UART_RxTx() interrupt 4 { 	// UART INT, vector=0023h
-	
-	EA=0;							// Suspend all interrupt
-	
-	if ( RI ){ 						// SCON.RI, RI=1 means new content have received                       	
-		
-		if( UART_In_Buf_Index < UART_In_Buf_Max){
-			UART_In_Buf[UART_In_Buf_Index] = SBUF;	
-			UART_In_Buf_Index++;
-			RI = 0;					// SCON.RI=0, force UART_Rx ready to receive again
-		}
-		else {	// (UART_Inbuf_Index >= UART_Inbuf_Max 
-
-				UART_In_Buf_Index = 0;			// Reset UART_Inbuf_Index
-				Flag.PC_Rx_Appeared_Flg = 1; 	// 
-		}
-	}
-
-	if ( TI ){    		// SCON.TI, TI=1 means previous content have been sent.   
-		
-		// Flag.UART_TX_Busy_Flg had been set in PC_Tx_Handler()		
-		
-		if ( UART_Out_Buf_Index < UART_Out_Buf_Max ){
-			485Tx_PC = 1; 			// T1, RX485 Tx enable
-			SBUF = UART_Out_Buf[UART_Out_Buf_Index];
-			UART_Out_Buf_Index++;
-			TI = 0;					// SCON.TI=0, force UART_Tx ready to sent again
-		}		
-		else {						// UART Tx completed, UART_Outbuf_Index >= UART_Outbuf_Max 
-	
-			UART_Out_Buf_Index=0;		// Reset UART_Inbuf_Index
-			Flag.UART_TX_Busy_Flg = 0;	// UART Tx busy
-			485Tx_PC = 0; 				// T1, RX485 Tx Disable (=Rx enable)
-		}	
-	}
-	
-	EA=1;							// Resume all interrupt
-}		
-
 void PC_UART_Init(float Fosc ,int Baudrate){	// include T1 init
 	
 	/* Special Function Registers Related to UART: 
@@ -435,9 +317,77 @@ void PC_UART_Init(float Fosc ,int Baudrate){	// include T1 init
 	DE1_PC = 0;						// RX485 Rx enable
 }
 
+void PC_Tx_Handler(int *Tx_Data_Ptr, int Len){
+	
+	int i;
+	// data need to be port to UART_Out_Buf[] before by way of UART
+	if(!(FLAG.UART_TX_Busy_Flg) == 1){// UART Tx avilable
+	
+		Flag.UART_TX_Busy_Flg = 1; 
+
+		for (i=0,i<Len,i++) {
+			UART_Out_Buf[i]=*Tx_Data_Ptr;
+			Tx_Data_Ptr++;
+		}
+		UART_Out_Buf_Index = 0;		// Initial UART_Out_Buf_Index
+		FLAG.PC_Tx_Pending_Flg = 0;
+		TI=1; 						// Triger UART_ISR() to start UART_Tx 
+	}
+	else {
+		UART_Tx_Data_Ptr_Temp=Tx_Data_Ptr;
+		UART_Tx_Data_Len_Temp=Len;
+		FLAG.PC_Tx_Pending_Flg = 1;	// Handover to ISR TIMER0_NmS() 
+	}
+}
+
+void PC_UART_RxTx() interrupt 4 { 	// UART INT, vector=0023h
+	
+	EA=0;							// Suspend all interrupt
+	
+	if ( RI ){ 						// SCON.RI, RI=1 means new content have received                       	
+		
+		if( UART_In_Buf_Index < UART_In_Buf_Max){
+			UART_In_Buf[UART_In_Buf_Index] = SBUF;	
+			UART_In_Buf_Index++;
+			RI = 0;					// SCON.RI=0, force UART_Rx ready to receive again
+		}
+		else {	// (UART_Inbuf_Index >= UART_Inbuf_Max 
+
+				UART_In_Buf_Index = 0;			// Reset UART_Inbuf_Index
+				Flag.PC_Rx_Appeared_Flg = 1; 	// 
+		}
+	}
+
+	if ( TI ){    		// SCON.TI, TI=1 means previous content have been sent.   
+		
+		// Flag.UART_TX_Busy_Flg had been set in PC_Tx_Handler()		
+		
+		if ( UART_Out_Buf_Index < UART_Out_Buf_Max ){
+			485Tx_PC = 1; 			// T1, RX485 Tx enable
+			SBUF = UART_Out_Buf[UART_Out_Buf_Index];
+			UART_Out_Buf_Index++;
+			TI = 0;					// SCON.TI=0, force UART_Tx ready to sent again
+		}		
+		else {						// UART Tx completed, UART_Outbuf_Index >= UART_Outbuf_Max 
+	
+			UART_Out_Buf_Index=0;		// Reset UART_Inbuf_Index
+			Flag.UART_TX_Busy_Flg = 0;	// UART Tx busy
+			485Tx_PC = 0; 				// T1, RX485 Tx Disable (=Rx enable)
+		}	
+	}
+	
+	EA=1;							// Resume all interrupt
+}		
+
 
 
 // ##### ACP TxRx
+void ACP_IOSerial_Init(){
+	
+	Serial_TXD0 = 1;				// Initial "1" on P3.6(WR)
+	FLAG.ACP_Tx_Pending_Flg = 0;
+}
+
 void ACP_Tx_Handler(int *Tx_Data_Ptr, int Len){
 
 	// sbit Serial_RXD0 = P3^7;		// RD
@@ -512,35 +462,9 @@ void ACP_IOSerial_Rx() interrupt 2 {// EXT1 INT, vector=0013h, UART Simulator
 	} 
 }
 
-void ACP_IOSerial_Init(){
-	
-	Serial_TXD0 = 1;				// Initial "1" on P3.6(WR)
-	FLAG.ACP_Tx_Pending_Flg = 0;
-}
-
 
 
 // ##### Read ADC AD7911
-Rd_ADC(int SPI_Data){
-	int i;
-	SPI_Data = 0x00; 
-	SPI_DO = 1;
-	SPI_CS = 1;
-	SPI_SCLK = 0;
-
-	if (i=0;i<14;i++){
-		SPI_SCLK = 1;
-		SPI_SCLK = 0;
-		if (SPI_DO){
-			SPI_Data |= 0x0001)		// set LSB = 1
-		
-		}else {
-			SPI_Data &= 0xFFFE;   	// set LSB = 0
-		}
-		SPI_Data <<= 1 ;
-	}
-}
-
 void ADC_SPI_Init(){
 /* ADC AD7911 
 // a minimum of 14 serial clock cycles, respectively, are needed 
@@ -564,7 +488,7 @@ void ADC_SPI_Init(){
 	int i;
 	SPI_SCLK = 1;
 	SPI_CS = 1;
-	SPI_CS = 0
+	SPI_CS = 0;
 
 	if (i=0;i<14;i++){	// Transmit 14(13-0) bit
 		SPI_DIN = 0;	// bit 11 = 0, select CH = 0	
@@ -574,7 +498,100 @@ void ADC_SPI_Init(){
 	SPI_CS = 1;
 }
 
+Rd_ADC( ){				// n=10 or 12, n bits convert resolution
+	int i;
+	float CovertedVolt = 0;
+	SPI_DO = 1;
+	SPI_CS = 1;
+	SPI_SCLK = 0;
 
+	if (i=0;i<14;i++){
+		SPI_SCLK = 1;
+		SPI_SCLK = 0;
+		if (SPI_DO){
+			ConvertedVolt |= 0x0001);	// set LSB = 1
+		
+		}else {
+			ConvertedVolt &= 0xFFFE;   	// set LSB = 0
+		}
+		SPI_Data <<= 1 ;
+	}
+	
+	ConvertedVolt = ConvertedVolt * 5 / (2 ^ 10 - 1);
+	return CovertedVolt;
+}
+
+
+
+// ##### Timer
+
+void TIMER0_NmS_Init(int N){		// NmS timer
+
+	TMOD&=0xF0;						// Clear Timer 0 
+	TMOD|=0x01; 					// Mode 1, 16 bit timer/count mode	
+	TH0=(65536-(N*1000/(Fosc*1000000/12)))/256;
+	TL0=(65536-(N*1000/(Fosc*1000000/12))%256;	
+	TR0=1;;							// TCON.TR0=1, Timer 0 start running
+	/* TCON: Related to Timer:
+		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
+		| TF1  | TR1  | TF0  | TR0  |      |      |      |      |
+	TFx: Timer x OverFlow flag
+		0 = Timer has not overflowed/rolled over
+		1 = Timer has overflowed/rolled over	
+	TRx: Timer 1/0 run control
+		0 = Timer not running
+		1 = Timer running|
+	*/
+	/* TCON: Related to External Interrupt: 
+	
+		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
+		|      |      |      |      | IE1  | IT1  | IE0  | IT0  |
+	IEx: External Interrupt(Int 0X13) Flag
+		1 = Set by External Interrupt,when a high-to-low edge signal is received on port 3.3/3.2 (INT1/INT0)
+		0 = Clear when processor vectors to interrupt service routine at program address 0013h. 
+	ITx: External Interrupt Triger Control
+		0: Set by program to enable external interrupt 1 to be triggered by a low-level signal to generate an interrupt.
+		1: Set by program to enable external interrupt 1 to be triggered by a falling edge signal to generate an interrupt.
+	*/
+}
+
+
+	
+	ACUD_ID = P2;					// 
+	
+}
+
+// ##### Initialization
+void System_Init(){
+	
+	PCON=0x00;
+	SMOD=0;							// Baud rate selection
+	/* PCON: Power Control Register: 
+			 The PCON register is used for power control and double baud rate by set 1
+		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 |
+		| MOD  | RSV2 |	RSV1 | RSV0	| GF1  | GF0  |	PWDN | IDL  |
+	SMOD	The SMOD bit is used to decide the baud rate in serial port operating modes 1, 2 or 3.
+	RSV2	Reserve 
+	RSV2	Reserve 
+	RSV2	Reserve 
+	GF1		一般用途位元，可當一個位元變數使用。
+	GF0		一般用途位元，可當一個位元變數使用。
+	PWDN	省電模式，必須使用reset訊號讓其回復到一般操作模式。
+	IDL		IDL=1會使8051的clock停止，必須使用外部中斷或reset訊號使8051回復到一般操作模式。	
+	*/
+	
+	PC_UART_Init(22.1184,9600);
+	ACP_IOSerial_Init();
+	ADC_SPI_Init();
+	TIMER0_NmS_Init(20);			// Timer0 20ms 
+	ACUD_Init();
+	
+}
+
+
+
+// ##### System
+void ACUD_Init(){
 
 
 
@@ -588,18 +605,9 @@ Main() {
 	IE=0x00;						// Set all interrupt disable
 	
 	// ***** Initialization manipulate
-	System_Init();
-	PC_UART_Init(22.1184,9600);
-	ACP_IOSerial_Init();
-	ADC_PI_Init();
-	TIMER0_NmS_Init(20);			// Timer0 20ms 
-	ACUD_Init();
-	Interrupt_Enable();				// Put this function being as last function 
-
-
-// ##### Interrupt initial manipulate
-			
-	/* Interrupt Priority: 	IP
+	System_Init();	
+		
+	/* Interrupt Priority: 	IP		// Put this function being as last function 
 	| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 	
 	| RSV  | RSV  |	PT2	 | PS	| PT1  | PX1  | PT0	 | PX0  |
 	RSV	Reserve
@@ -716,7 +724,7 @@ void ACUD_StateEvent(){
 
 }
 
-
+// Aircondition manipulate
 void Air_Manipulate(){
 	Tempeture_Detect();		// depend on the command in Temo_Status 
 	Fan_Adjust();			// depend on the command in Fan_Status 
