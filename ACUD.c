@@ -165,7 +165,6 @@ int 	ACUD_ID
 // @@@@@@@@@@ Program @@@@@@@@@@
 
 // ##### Initialization 
-
 void System_Init(){
 	
 	PCON=0x00;
@@ -184,9 +183,6 @@ void System_Init(){
 	IDL		IDL=1會使8051的clock停止，必須使用外部中斷或reset訊號使8051回復到一般操作模式。	
 	*/
 }
-
-
-
 
 void TIMER0_NmS_Init(int N){		// NmS timer
 
@@ -226,8 +222,7 @@ void ACUD_Init(){
 
 
 
-// ##### ISRs
-
+// ##### Period 	
 /* Interrupt Vector(中斷向量)
 		| INT Number |  Description  |	Address |
 		|      0     | EXTERNAL INT0 |	 0003h  |   
@@ -251,6 +246,28 @@ void IIMER0_NmS() interrupt 1 {		// Timer0 INT vector=000Bh
 		PC_Tx_Handler(ACP_Tx_Data_Ptr_Temp, ACP_Tx_Data_Len_Temp);
 	}
 }
+
+void mS_Delay(int m){				//	Delay ms 
+	
+	int i,j;						// 宣告整數變數i,j,N 
+	
+	for (i=0;i<m;i++)				// 計數N次,延遲 N*1ms 
+	#if Fosc==22.1184				// 延遲 t*1ms @22.1184MHz
+		for (j=0;j<1600;j++);	
+	#else							// 延遲 t*1ms @11.0952MHz
+		for (j=0;j<800;j++);	 
+	#endif
+}
+
+void uS_Delay (int u){				// Delay us, 52us or 104us
+
+
+
+
+
+	
+}
+
 
 
 // ##### PC TxRx
@@ -502,6 +519,7 @@ void ACP_IOSerial_Init(){
 }
 
 
+
 // ##### Read ADC AD7911
 Rd_ADC(int SPI_Data){
 	int i;
@@ -558,29 +576,6 @@ void ADC_SPI_Init(){
 
 
 
-}
-
-// ##### Period Delay	
-void mS_Delay(int m){				//	Delay ms 
-	
-	int i,j;						// 宣告整數變數i,j,N 
-	
-	for (i=0;i<m;i++)				// 計數N次,延遲 N*1ms 
-	#if Fosc==22.1184				// 延遲 t*1ms @22.1184MHz
-		for (j=0;j<1600;j++);	
-	#else							// 延遲 t*1ms @11.0952MHz
-		for (j=0;j<800;j++);	 
-	#endif
-}
-
-void uS_Delay (int u){				// Delay us, 52us or 104us
-
-
-
-
-
-	
-}
 
 
 
