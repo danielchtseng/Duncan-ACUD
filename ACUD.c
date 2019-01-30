@@ -2,7 +2,9 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver: W052-H1810
+// Ver: W053-H1600
+
+// 485Tx_ACP need to be implemented, Handler need to be rechecked
 
 // @@@@@@@@@@ Daclare @@@@@@@@@@
 
@@ -56,7 +58,7 @@ sbit Serial_TXD0	= P3^6;		// sbit WR      = 0xB6;			// WR
 sbit 485Tx_ACP		= P3^5;		// sbit T1      = 0xB5;			// T1
 sbit INT1_Serial	= P3^3;		// sbit INT1    = 0xB3;			// INT0, UART 						
 // UART
-sbit 485Tx_PC		= P3^2;		// sbit INT0    = 0xB2;			// UART TXD
+sbit 485Tx_PC   	= P3^2;		// sbit INT0    = 0xB2;			// UART TXD
 sbit UART_TXD1 		= P3^1;		// sbit TXD     = 0xB1;			// UARD RXD
 sbit UART_RXD1 		= P3^0;		// sbit RXD     = 0xB0;
 
@@ -111,6 +113,8 @@ union Bit_Field {					// all variables in union share same memory
 		unsigned IOSerial_Tx_Busy_Flg 	: 1;		
 		unsigned ACP_Rx_Appeared_Flg 	: 1;		
 		unsigned ACP_Tx_Pending_Flg 	: 1;
+		// relate to ADC
+		unsigned Rd_ADC_Busy_Flg 		: 1;
 	}
 };
 /* Bit Field: 是一種省空間的特殊 data member, 可以使用特定幾個 bit 來放 data.
@@ -133,8 +137,8 @@ int 	UART_In_Buf_Index;
 int 	UART_Out_buf_Index;
 char 	UART_In_Buf[UART_In_Buf_Max];
 char 	UART_Out_Buf[UART_Out_Buf_Max];
-int 	*UART_Tx_Data_Ptr_Temp;
-int		UART_Tx_Data_Len_Temp;
+//int 	*UART_Tx_Data_Ptr_Temp;
+//int		UART_Tx_Data_Len_Temp;
 
 // Declare related to ACP
 // related to IOSerial 
@@ -163,7 +167,7 @@ int 	ACUD_ID
 
 
 
-// @@@@@@@@@@ Program @@@@@@@@@@
+// @@@@@@@@@@ Program @@@@@@@@@@.
 
 
 // ##### Period 	
@@ -182,13 +186,12 @@ void IIMER0_NmS() interrupt 1 {		// Timer0 INT vector=000Bh
 	ADC_Detect();					// Update Temperture status
 	
 
-	if ( FLAG.PC_Tx_Pending_Flg==1){
-		PC_Tx_Handler(UART_Tx_Data_Ptr_Temp, UART_Tx_Data_Len_Temp);
-		
-	}
-	if ( FLAG.ACP_Tx_Pending_Flg==1){
-		PC_Tx_Handler(ACP_Tx_Data_Ptr_Temp, ACP_Tx_Data_Len_Temp);
-	}
+//	if ( FLAG.PC_Tx_Pending_Flg==1){
+//		PC_Tx_Handler(UART_Tx_Data_Ptr_Temp, UART_Tx_Data_Len_Temp);	
+//	}
+//	if ( FLAG.ACP_Tx_Pending_Flg==1){
+//		PC_Tx_Handler(ACP_Tx_Data_Ptr_Temp, ACP_Tx_Data_Len_Temp);
+//	}
 }
 
 void mS_Delay(int m){				//	Delay ms 
@@ -330,13 +333,17 @@ void PC_Tx_Handler(int *Tx_Data_Ptr, int Len){
 			Tx_Data_Ptr++;
 		}
 		UART_Out_Buf_Index = 0;		// Initial UART_Out_Buf_Index
-		FLAG.PC_Tx_Pending_Flg = 0;
+		//FLAG.PC_Tx_Pending_Flg = 0;
 		TI=1; 						// Triger UART_ISR() to start UART_Tx 
+		
+		return 1;
 	}
 	else {
-		UART_Tx_Data_Ptr_Temp=Tx_Data_Ptr;
-		UART_Tx_Data_Len_Temp=Len;
-		FLAG.PC_Tx_Pending_Flg = 1;	// Handover to ISR TIMER0_NmS() 
+		
+		return 0;
+		//UART_Tx_Data_Ptr_Temp=Tx_Data_Ptr;
+		//UART_Tx_Data_Len_Temp=Len;
+		//FLAG.PC_Tx_Pending_Flg = 1;// Handover to ISR TIMER0_NmS() 
 	}
 }
 
@@ -371,7 +378,9 @@ void PC_UART_RxTx() interrupt 4 { 	// UART INT, vector=0023h
 		else {						// UART Tx completed, UART_Outbuf_Index >= UART_Outbuf_Max 
 	
 			UART_Out_Buf_Index=0;		// Reset UART_Inbuf_Index
+			
 			Flag.UART_TX_Busy_Flg = 0;	// UART Tx busy
+			
 			485Tx_PC = 0; 				// T1, RX485 Tx Disable (=Rx enable)
 		}	
 	}
@@ -388,11 +397,11 @@ void ACP_IOSerial_Init(){
 	FLAG.ACP_Tx_Pending_Flg = 0;
 }
 
-void ACP_Tx_Handler(int *Tx_Data_Ptr, int Len){
+int ACP_Tx_Handler(int *Tx_Data_Ptr, int Len){
 
 	// sbit Serial_RXD0 = P3^7;		// RD
 	// sbit Serial_TXD0	= P3^6;		// WR
-	// sbit 485Tx_ACP	= P3^5;		// T1
+	// sbit 485Tx_ACP   = P3^5;		// T1
 	// sbit INT1_Serial = P3^3;		// INT1, connect to pin RXD0
 
 	// data need to be port to UART_Out_Buf[] before by way of UART
@@ -405,20 +414,24 @@ void ACP_Tx_Handler(int *Tx_Data_Ptr, int Len){
 			Tx_Data_Ptr++;
 		}
 		ACP_Out_Buf_Index = 0;		// Initial UART_Out_Buf_Index
-		FLAG.ACP_Tx_Pending_Flg = 0;
+		// FLAG.ACP_Tx_Pending_Flg = 0;
 		
 		ACP_IOSerial_Tx();			// Call IOSerial_Tx_ACP() to transmit data via ACP
 		
+		
+		return 1;	
 	}
 	else {
-		ACP_Tx_Data_Ptr_Temp=Tx_Data_Ptr;
-		ACP_Tx_Data_Len_Temp=Len;
-		FLAG.ACP_Tx_Pending_Flg = 1;	// Handover to ISR TIMER0_NmS() 
+		return 0;
+		//ACP_Tx_Data_Ptr_Temp=Tx_Data_Ptr;
+		//ACP_Tx_Data_Len_Temp=Len;
+		//FLAG.ACP_Tx_Pending_Flg = 1;	// Handover to ISR TIMER0_NmS() 
 	}
 
 }
 
 void ACP_IOSerial_Tx(){				// Call by ACP_Tx_Handler()
+	
 	int i;
 	
 	for (ACP_Out_Buf_Index=0;i<ACP_Out_Buf_Max,ACP_Out_Buf_Index++) {
@@ -438,6 +451,7 @@ void ACP_IOSerial_Tx(){				// Call by ACP_Tx_Handler()
 		}
 		Serial_TXD0 = 1;			// sent Stop bit "1" on P3.6(WR)
 		uS_Delay(104);				// 
+		Flag.IOSerial_TX_Busy_Flg = 0;
 		EA = 1;						// Resume all interrupt
 	}
 }
@@ -446,7 +460,7 @@ void ACP_IOSerial_Rx() interrupt 2 {// EXT1 INT, vector=0013h, UART Simulator
 									// Tx no need to using interrupt. 
 	// sbit Serial_RXD0 = P3^7;		// RD
 	// sbit Serial_TXD0	= P3^6;		// WR
-	// sbit 485Tx_ACP	= P3^5;		// T1
+	// sbit 485Tx_ACP   = P3^5;		// T1
 	// sbit INT1_Serial = P3^3;		// INT1, connect to pin RXD0
 	
 	uS_Delay(52);
@@ -496,29 +510,37 @@ void ADC_SPI_Init(){
 		SPI_SCLK = 1	
 	}
 	SPI_CS = 1;
+	Flag.Rd_ADC_Busy_Flg = 0;
 }
 
 Rd_ADC( ){				// n=10 or 12, n bits convert resolution
 	int i;
 	float CovertedVolt = 0;
-	SPI_DO = 1;
-	SPI_CS = 1;
-	SPI_SCLK = 0;
-
-	if (i=0;i<14;i++){
-		SPI_SCLK = 1;
-		SPI_SCLK = 0;
-		if (SPI_DO){
-			ConvertedVolt |= 0x0001);	// set LSB = 1
-		
-		}else {
-			ConvertedVolt &= 0xFFFE;   	// set LSB = 0
-		}
-		SPI_Data <<= 1 ;
-	}
 	
-	ConvertedVolt = ConvertedVolt * 5 / (2 ^ 10 - 1);
-	return CovertedVolt;
+	if (!(Flag.Rd_ADC_Busy_Flg)) {
+		Flag.Rd_ADC_Busy_Flg = 1;
+		SPI_DO = 1;
+		SPI_CS = 1;
+		SPI_SCLK = 0;
+
+		if (i=0;i<14;i++){
+			SPI_SCLK = 1;
+			SPI_SCLK = 0;
+			if (SPI_DO){
+				ConvertedVolt |= 0x0001);	// set LSB = 1
+			}else {
+				ConvertedVolt &= 0xFFFE;   		// set LSB = 0
+			}
+			SPI_Data <<= 1 ;
+		}
+	
+		ConvertedVolt = ConvertedVolt * 5 / (2 ^ 10 - 1);
+		Flag.Rd_ADC_Busy_Flg = 0;
+		return CovertedVolt;
+	}
+	else {
+		
+	}
 }
 
 
@@ -554,9 +576,6 @@ void TIMER0_NmS_Init(int N){		// NmS timer
 		1: Set by program to enable external interrupt 1 to be triggered by a falling edge signal to generate an interrupt.
 	*/
 }
-
-
-	
 	ACUD_ID = P2;					// 
 	
 }
