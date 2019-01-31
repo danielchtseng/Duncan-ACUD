@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver: W053-H1600
+// Ver: W054-H1530
 
 // 485Tx_ACP need to be implemented, Handler need to be rechecked
 
@@ -11,27 +11,27 @@
 #include <reg51.h>
 
 /* BYTE Register
-sfr P0   = 0x80;
-sfr P1   = 0x90;
-sfr P2   = 0xA0;
-sfr P3   = 0xB0;
-sfr PSW  = 0xD0;
-sfr ACC  = 0xE0;
-sfr B    = 0xF0;
-sfr SP   = 0x81;
-sfr DPL  = 0x82;
-sfr DPH  = 0x83;
-sfr PCON = 0x87;
-sfr TCON = 0x88;
-sfr TMOD = 0x89;
-sfr TL0  = 0x8A;
-sfr TL1  = 0x8B;
-sfr TH0  = 0x8C;
-sfr TH1  = 0x8D;
-sfr IE   = 0xA8;
-sfr IP   = 0xB8;
-sfr SCON = 0x98;
-sfr SBUF = 0x99;
+sfr P0   	= 0x80;
+sfr P1   	= 0x90;
+sfr P2   	= 0xA0;
+sfr P3   	= 0xB0;
+sfr PSW  	= 0xD0;
+sfr ACC  	= 0xE0;
+sfr B    	= 0xF0;
+sfr SP   	= 0x81;
+sfr DPL  	= 0x82;
+sfr DPH  	= 0x83;
+sfr PCON 	= 0x87;
+sfr TCON 	= 0x88;
+sfr TMOD 	= 0x89;
+sfr TL0  	= 0x8A;
+sfr TL1  	= 0x8B;
+sfr TH0  	= 0x8C;
+sfr TH1  	= 0x8D;
+sfr IE   	= 0xA8;
+sfr IP   	= 0xB8;
+sfr SCON 	= 0x98;
+sfr SBUF 	= 0x99;
 */
 
 /* SPF BIT 
@@ -46,21 +46,21 @@ sbit P    	= 0xD0;
 
 // Port 1: 
 // SPI(Serial Peripheral Interface) Simulator
-sbit 			SPI_DO  	= P1^0;
-sbit 			SPI_CS   	= P1^1;
-sbit 			SPI_SCLK 	= P1^2;
-sbit 			SPI_DIN  	= P1^3;
+sbit SPI_DO			= P1^0;
+sbit SPI_CS   		= P1^1;
+sbit SPI_SCLK 		= P1^2;
+sbit SPI_DIN  		= P1^3;
 
 // Port 3: 
 // Serial Simulator
-sbit Serial_RXD0	= P3^7;		// sbit RD   	= 0xB7;			// RD
-sbit Serial_TXD0	= P3^6;		// sbit WR      = 0xB6;			// WR
+sbit Serial_RxD0	= P3^7;		// sbit RD   	= 0xB7;			// RD
+sbit Serial_TxD0	= P3^6;		// sbit WR      = 0xB6;			// WR
 sbit 485Tx_ACP		= P3^5;		// sbit T1      = 0xB5;			// T1
 sbit INT1_Serial	= P3^3;		// sbit INT1    = 0xB3;			// INT0, UART 						
 // UART
 sbit 485Tx_PC   	= P3^2;		// sbit INT0    = 0xB2;			// UART TXD
-sbit UART_TXD1 		= P3^1;		// sbit TXD     = 0xB1;			// UARD RXD
-sbit UART_RXD1 		= P3^0;		// sbit RXD     = 0xB0;
+sbit UART_TxD1 		= P3^1;		// sbit TXD     = 0xB1;			// UARD RXD
+sbit UART_RxD1 		= P3^0;		// sbit RXD     = 0xB0;
 
 // TCON  
 sbit TF1  	= 0x8F;
@@ -107,12 +107,10 @@ union Bit_Field {					// all variables in union share same memory
 	Struct {		// 注意: type 必須為整數(signed or unsigned皆可)
 		// relate to PC
 		unsigned UART_Tx_Busy_Flg 		: 1;			// UART transmitting		
-		unsigned PC_Rx_Appeared_Flg 	: 1;
-		unsigned PC_Tx_Pending_Flg 		: 1;
+		unsigned PC_Rx_Completed_Flg 	: 1;
 		// relate to ACP
 		unsigned IOSerial_Tx_Busy_Flg 	: 1;		
-		unsigned ACP_Rx_Appeared_Flg 	: 1;		
-		unsigned ACP_Tx_Pending_Flg 	: 1;
+		unsigned ACP_Rx_Completed_Flg 	: 1;		
 		// relate to ADC
 		unsigned Rd_ADC_Busy_Flg 		: 1;
 	}
@@ -137,8 +135,7 @@ int 	UART_In_Buf_Index;
 int 	UART_Out_buf_Index;
 char 	UART_In_Buf[UART_In_Buf_Max];
 char 	UART_Out_Buf[UART_Out_Buf_Max];
-//int 	*UART_Tx_Data_Ptr_Temp;
-//int		UART_Tx_Data_Len_Temp;
+
 
 // Declare related to ACP
 // related to IOSerial 
@@ -185,13 +182,6 @@ void IIMER0_NmS() interrupt 1 {		// Timer0 INT vector=000Bh
 	Key_Detect();					// Udate Key present status
 	ADC_Detect();					// Update Temperture status
 	
-
-//	if ( FLAG.PC_Tx_Pending_Flg==1){
-//		PC_Tx_Handler(UART_Tx_Data_Ptr_Temp, UART_Tx_Data_Len_Temp);	
-//	}
-//	if ( FLAG.ACP_Tx_Pending_Flg==1){
-//		PC_Tx_Handler(ACP_Tx_Data_Ptr_Temp, ACP_Tx_Data_Len_Temp);
-//	}
 }
 
 void mS_Delay(int m){				//	Delay ms 
@@ -307,26 +297,28 @@ void PC_UART_Init(float Fosc ,int Baudrate){	// include T1 init
 	
 		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
 		|      |      |      |      | IE1  | IT1  | IE0  | IT0  |
-	IEx: External Interrupt(Int 0X13) Flag
-		1 = Set by External Interrupt,when a high-to-low edge signal is received on port 3.3/3.2 (INT1/INT0)
-		0 = Clear when processor vectors to interrupt service routine at program address 0013h. 
-	ITx: External Interrupt Triger Control
+	IEx: External Interrupt Triger Control
 		0: Set by program to enable external interrupt 1 to be triggered by a low-level signal to generate an interrupt.
 		1: Set by program to enable external interrupt 1 to be triggered by a falling edge signal to generate an interrupt.
+	ITx: External Interrupt(Int 0X13) Flag
+		1 = Set by External Interrupt,when a high-to-low edge signal is received on port 3.3/3.2 (INT1/INT0)
+		0 = Clear when processor vectors to interrupt service routine at program address 0013h. 
+	
 	*/
 	
 	UART_In_Buf_Index = 0;
 	UART_Out_Buf_Index = 0;
-	DE1_PC = 0;						// RX485 Rx enable
+	485Tx_PC = 0;					// RS485 Rx enable
 }
 
-void PC_Tx_Handler(int *Tx_Data_Ptr, int Len){
+int PC_Tx_Handler(int *Tx_Data_Ptr, int Len){
+	// data need to be port to UART_Out_Buf[] before by way of UART
 	
 	int i;
-	// data need to be port to UART_Out_Buf[] before by way of UART
-	if(!(FLAG.UART_TX_Busy_Flg) == 1){// UART Tx avilable
 	
-		Flag.UART_TX_Busy_Flg = 1; 
+	if(!(Flag.UART_Tx_Busy_Flg)){	// UART Tx avilable
+	
+		Flag.UART_Tx_Busy_Flg = 1; 	// clear by PC_UART_RxTx() interrupt 4
 
 		for (i=0,i<Len,i++) {
 			UART_Out_Buf[i]=*Tx_Data_Ptr;
@@ -336,14 +328,12 @@ void PC_Tx_Handler(int *Tx_Data_Ptr, int Len){
 		//FLAG.PC_Tx_Pending_Flg = 0;
 		TI=1; 						// Triger UART_ISR() to start UART_Tx 
 		
-		return 1;
+		return 1;					// data transmit successful
 	}
 	else {
 		
-		return 0;
-		//UART_Tx_Data_Ptr_Temp=Tx_Data_Ptr;
-		//UART_Tx_Data_Len_Temp=Len;
-		//FLAG.PC_Tx_Pending_Flg = 1;// Handover to ISR TIMER0_NmS() 
+		return 0;					// data transmit failure
+
 	}
 }
 
@@ -358,34 +348,34 @@ void PC_UART_RxTx() interrupt 4 { 	// UART INT, vector=0023h
 			UART_In_Buf_Index++;
 			RI = 0;					// SCON.RI=0, force UART_Rx ready to receive again
 		}
-		else {	// (UART_Inbuf_Index >= UART_Inbuf_Max 
+		else {	// (UART_In_Buf_Index >= UART_In_Buf_Max 
 
-				UART_In_Buf_Index = 0;			// Reset UART_Inbuf_Index
-				Flag.PC_Rx_Appeared_Flg = 1; 	// 
+				UART_In_Buf_Index = 0;			// Reset UART_In_Buf_Index
+				Flag.PC_Rx_Completed_Flg = 1; 	// 
 		}
 	}
 
 	if ( TI ){    		// SCON.TI, TI=1 means previous content have been sent.   
 		
-		// Flag.UART_TX_Busy_Flg had been set in PC_Tx_Handler()		
+		// Flag.UART_Tx_Busy_Flg had been set in PC_Tx_Handler()		
 		
 		if ( UART_Out_Buf_Index < UART_Out_Buf_Max ){
-			485Tx_PC = 1; 			// T1, RX485 Tx enable
+			
+			485Tx_PC = 1; 				// Enable RS485 Tx 
+			
 			SBUF = UART_Out_Buf[UART_Out_Buf_Index];
 			UART_Out_Buf_Index++;
-			TI = 0;					// SCON.TI=0, force UART_Tx ready to sent again
+			TI = 0;						// SCON.TI=0, force UART_Tx ready to sent again
 		}		
-		else {						// UART Tx completed, UART_Outbuf_Index >= UART_Outbuf_Max 
+		else {							// UART Tx completed, UART_Outbuf_Index >= UART_Outbuf_Max 
 	
-			UART_Out_Buf_Index=0;		// Reset UART_Inbuf_Index
-			
-			Flag.UART_TX_Busy_Flg = 0;	// UART Tx busy
-			
-			485Tx_PC = 0; 				// T1, RX485 Tx Disable (=Rx enable)
+			UART_Out_Buf_Index=0;		// Reset UART_Out_Buf_Index
+			Flag.UART_Tx_Busy_Flg = 0;	// Clear UART Tx busy
+			485Tx_PC = 0; 				// Disable RS485 Tx ( =Rx enable)
 		}	
 	}
 	
-	EA=1;							// Resume all interrupt
+	EA=1;								// Resume all interrupt
 }		
 
 
@@ -393,87 +383,108 @@ void PC_UART_RxTx() interrupt 4 { 	// UART INT, vector=0023h
 // ##### ACP TxRx
 void ACP_IOSerial_Init(){
 	
-	Serial_TXD0 = 1;				// Initial "1" on P3.6(WR)
-	FLAG.ACP_Tx_Pending_Flg = 0;
+	ACP_In_Buf_Index = 0;	
+	ACP_Out_Buf_Index = 0;
+	485Tx_ACP = 0;						// RS485 Tx disable	(= Rx enable)
+	
+	IT1 = 1;							// EX1 will be triggered by a high-to-low edge(Falling) signal is received
+										// Ex1 is enabled in main()
 }
 
 int ACP_Tx_Handler(int *Tx_Data_Ptr, int Len){
 
-	// sbit Serial_RXD0 = P3^7;		// RD
-	// sbit Serial_TXD0	= P3^6;		// WR
-	// sbit 485Tx_ACP   = P3^5;		// T1
-	// sbit INT1_Serial = P3^3;		// INT1, connect to pin RXD0
+	// sbit Serial_RxD0 = P3^7;			// RD
+	// sbit Serial_TxD0	= P3^6;			// WR
+	// sbit 485Tx_ACP   = P3^5;			// T1
+	// sbit INT1_Serial = P3^3;			// INT1, connect to pin RxD0
 
 	// data need to be port to UART_Out_Buf[] before by way of UART
-	if(!(FLAG.IOSerial_TX_Busy_Flg) == 1){// IOSerial Tx avilable
+	if(!(FLAG.IOSerial_Tx_Busy_Flg)){	// IOSerial Tx avilable
 	
-		Flag.IOSerial_TX_Busy_Flg = 1; 
+		Flag.IOSerial_Tx_Busy_Flg = 1; 	// clear by ACP_IOSerial_Tx()
 
 		for (i=0,i<Len,i++) {
 			ACP_Out_Buf[i]=*Tx_Data_Ptr;
 			Tx_Data_Ptr++;
 		}
-		ACP_Out_Buf_Index = 0;		// Initial UART_Out_Buf_Index
-		// FLAG.ACP_Tx_Pending_Flg = 0;
+		ACP_Out_Buf_Index = 0;			// Initial UART_Out_Buf_Index
+		// Flag.ACP_Tx_Pending_Flg = 0;
 		
-		ACP_IOSerial_Tx();			// Call IOSerial_Tx_ACP() to transmit data via ACP
+		ACP_IOSerial_Tx();				// Call IOSerial_Tx_ACP() to transmit data via ACP
 		
 		
-		return 1;	
+		return 1;						// data transmit successful
 	}
 	else {
-		return 0;
-		//ACP_Tx_Data_Ptr_Temp=Tx_Data_Ptr;
-		//ACP_Tx_Data_Len_Temp=Len;
-		//FLAG.ACP_Tx_Pending_Flg = 1;	// Handover to ISR TIMER0_NmS() 
+		
+		return 0;						// data transmit failure
+
 	}
 
 }
 
-void ACP_IOSerial_Tx(){				// Call by ACP_Tx_Handler()
+void ACP_IOSerial_Tx(){					// CACP_Out_Buf[] was set ready and call by ACP_Tx_Handler(), 
 	
 	int i;
 	
-	for (ACP_Out_Buf_Index=0;i<ACP_Out_Buf_Max,ACP_Out_Buf_Index++) {
+	for (ACP_Out_Buf_Index=0;i<ACP_Out_Buf_Max,ACP_Out_Buf_Index++){
+		
+		// Interrupt disable for 1 byte period only
+		EA = 0;							// Suspending all interrupt happen 
+		
+		485Tx_ACP = 1;					// RS485 Tx enable (= Rx disable)
 		
 		ACP_TBUF = ACP_Out_Buf[ACP_Out_Buf_Index];
-		EA = 0;						// Suspending all interrupt happen during every single byte transmitting
-		Serial_TXD0 = 0;			// sent Start bit "0" on P3.6(WR)
+		Serial_TxD0 = 0;				// sent Start bit "0" on P3.6(WR)
 		uS_Delay(104);
 		for (i=0;i<8; i++) {
 			if (ACP_TBUF & 0x80) {
-				Serial_TXD0 = 1;	// sent out "1"
+				Serial_TxD0 = 1;		// sent out "1"
 			}else {
-				Serial_TXD0 = 0;	// Sent out "0"
+				Serial_TxD0 = 0;		// Sent out "0"
 			}
 			ACP_TBUF <<= 1; 			// ACP_TBUF left shift 1 bit 
 			uS_Delay(104);
 		}
-		Serial_TXD0 = 1;			// sent Stop bit "1" on P3.6(WR)
-		uS_Delay(104);				// 
-		Flag.IOSerial_TX_Busy_Flg = 0;
-		EA = 1;						// Resume all interrupt
+		Serial_TxD0 = 1;				// sent Stop bit "1" on P3.6(WR)
+		uS_Delay(104);					// 
+		Flag.IOSerial_Tx_Busy_Flg = 0;
+		
+		EA = 1;							// Resume all interrupt
 	}
 }
 
-void ACP_IOSerial_Rx() interrupt 2 {// EXT1 INT, vector=0013h, UART Simulator
-									// Tx no need to using interrupt. 
-	// sbit Serial_RXD0 = P3^7;		// RD
-	// sbit Serial_TXD0	= P3^6;		// WR
-	// sbit 485Tx_ACP   = P3^5;		// T1
-	// sbit INT1_Serial = P3^3;		// INT1, connect to pin RXD0
+void ACP_IOSerial_Rx() interrupt 2 {	// EXT1 INT, vector=0013h, UART Simulator
+										// Tx no need to using interrupt. 
+	// sbit Serial_RxD0 = P3^7;			// RD
+	// sbit Serial_TxD0	= P3^6;			// WR
+	// sbit 485Tx_ACP   = P3^5;			// T1
+	// sbit INT1_Serial = P3^3;			// INT1, connect to pin RxD0
+	
+	EA = 0; 							// Suspending all interrupt happen 
 	
 	uS_Delay(52);
 	
 	for (i=0;i<8,i++) {
 		
-		if (Serial_RXD0 == 1) {
+		if (Serial_RxD0 == 1) {
 			ACP_RBUF |= 1;
 			ACP_RBUF << 1;				//ACP_SBUF left shift 1 bit 
 			uS_Delay(104);
 		} else
-		Flag.ACP_Rx_Appeared_Flg = 1;
+		
 	} 
+	
+	if( ACP_In_Buf_Index < UART_In_Buf_Max){
+			ACP_In_Buf[ACP_In_Buf_Index] = ACP_RBUF;	
+			ACP_In_Buf_Index++;
+	}
+	else {								// ACP_In_Buf_Index >= ACP_In_Buf_Max 
+		ACP_In_Buf_Index = 0;			// Reset UART_Inbuf_Index
+		Flag.ACP_Rx_Completed_Flg = 1; 	// 
+	}
+
+	EA = 1;								// Resume all interrupt
 }
 
 
@@ -670,7 +681,7 @@ Main() {
 // PC Event manipulate
 void PC_StateEvent(){
 
-	while(Flag.PC_Rx_Appeared_Flg){
+	while(Flag.PC_Rx_Completed_Flg){
 
 		if ( Strcpm ( UART_In_Buf," string ") = 0) {
 
@@ -697,14 +708,14 @@ void PC_StateEvent(){
 		
 			break;
 		}
-		Flag.PC_Rx_Appeared_Flg = 0
+		Flag.PC_Rx_Completed_Flg = 0
 	}
 }
 
 // ACP Event manipulate
 void ACP_StateEvent(){
 
-	while(Flag.ACP_Rx_Appeared_Flg){
+	while(Flag.ACP_Rx_Completed_Flg){
 
 		if ( Strcpm ( ACP_In_Buf," string ") = 0) {
 
@@ -731,7 +742,7 @@ void ACP_StateEvent(){
 			break;
 		}
 		
-		Flag.ACP_Rx_Appeared_Flg = 0
+		Flag.ACP_Rx_Completed_Flg = 0
 	}
 }
 
