@@ -2,9 +2,8 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver: W054-H1530
+// Ver: W055-H1130
 
-// 485Tx_ACP need to be implemented, Handler need to be rechecked
 
 // @@@@@@@@@@ Daclare @@@@@@@@@@
 
@@ -53,14 +52,14 @@ sbit SPI_DIN  		= P1^3;
 
 // Port 3: 
 // Serial Simulator
-sbit Serial_RxD0	= P3^7;		// sbit RD   	= 0xB7;			// RD
-sbit Serial_TxD0	= P3^6;		// sbit WR      = 0xB6;			// WR
-sbit 485Tx_ACP		= P3^5;		// sbit T1      = 0xB5;			// T1
-sbit INT1_Serial	= P3^3;		// sbit INT1    = 0xB3;			// INT0, UART 						
+sbit Serial_RxD0	= P3^7;				// sbit RD   	= 0xB7;			// RD
+sbit Serial_TxD0	= P3^6;				// sbit WR      = 0xB6;			// WR
+sbit 485Tx_ACP		= P3^5;				// sbit T1      = 0xB5;			// T1
+sbit INT1_Serial	= P3^3;				// sbit INT1    = 0xB3;			// INT0, UART 						
 // UART
-sbit 485Tx_PC   	= P3^2;		// sbit INT0    = 0xB2;			// UART TXD
-sbit UART_TxD1 		= P3^1;		// sbit TXD     = 0xB1;			// UARD RXD
-sbit UART_RxD1 		= P3^0;		// sbit RXD     = 0xB0;
+sbit 485Tx_PC   	= P3^2;				// sbit INT0    = 0xB2;			// UART TXD
+sbit UART_TxD1 		= P3^1;				// sbit TXD     = 0xB1;			// UARD RXD
+sbit UART_RxD1 		= P3^0;				// sbit RXD     = 0xB0;
 
 // TCON  
 sbit TF1  	= 0x8F;
@@ -83,30 +82,30 @@ sbit TI   	= 0x99;
 sbit RI   	= 0x98;
 
 // IP   
-sbit PS   	= 0xBC;					// sbit PS  = 0xB8^4
-sbit PT1  	= 0xBB;					// sbit PT1 = 0xB8^3
-sbit PX1  	= 0xBA;					// sbit PX1 = 0xB8^2
-sbit PT0  	= 0xB9;					// sbit PT0 = 0xB8^1
-sbit PX0  	= 0xB8;					// sbit PX0 = 0xB8^0
+sbit PS   	= 0xBC;						// sbit PS  = 0xB8^4
+sbit PT1  	= 0xBB;						// sbit PT1 = 0xB8^3
+sbit PX1  	= 0xBA;						// sbit PX1 = 0xB8^2
+sbit PT0  	= 0xB9;						// sbit PT0 = 0xB8^1
+sbit PX0  	= 0xB8;						// sbit PX0 = 0xB8^0
 
 // IE   
-sbit EA   	= 0xAF;					// sbit EA  = 0xA8^7
-sbit ES   	= 0xAC;					// sbit ES  = 0xA8^4
-sbit ET1  	= 0xAB;					// sbit ET1 = 0xA8^3
-sbit EX1  	= 0xAA;					// sbit EX1 = 0xA8^2
-sbit ET0  	= 0xA9;					// sbit ET0 = 0xA8^1
-sbit EX0  	= 0xA8;					// sbit EX0 = 0xA8^0
+sbit EA   	= 0xAF;						// sbit EA  = 0xA8^7
+sbit ES   	= 0xAC;						// sbit ES  = 0xA8^4
+sbit ET1  	= 0xAB;						// sbit ET1 = 0xA8^3
+sbit EX1  	= 0xAA;						// sbit EX1 = 0xA8^2
+sbit ET0  	= 0xA9;						// sbit ET0 = 0xA8^1
+sbit EX0  	= 0xA8;						// sbit EX0 = 0xA8^0
 */
 
 
 
 // ***** Declare related to Communication
-union Bit_Field {					// all variables in union share same memory
+union Bit_Field {						// all variables in union share same memory
 	
 	unsigned Flag;
 	Struct {		// 注意: type 必須為整數(signed or unsigned皆可)
 		// relate to PC
-		unsigned UART_Tx_Busy_Flg 		: 1;			// UART transmitting		
+		unsigned UART_Tx_Busy_Flg 		: 1;				
 		unsigned PC_Rx_Completed_Flg 	: 1;
 		// relate to ACP
 		unsigned IOSerial_Tx_Busy_Flg 	: 1;		
@@ -127,10 +126,10 @@ union Bit_Field {					// all variables in union share same memory
 //		} Flag;   						*/
 
 // Declare related to UART 		
-#define Fosc				22.1184	// 0r 11.0592 Need to be confirmed
-#define Baudrate			9600	// ***** Need to be confirmed
-#define UART_In_Buf_Max 		5;	// ***** Need to be confirmed
-#define UART_Out_Buf_Max		5;	// ***** Need to be confirmed
+#define Fosc				22.1184		// ***** Need to be confirmed (0r 11.0592 )
+#define Baudrate			9600		// ***** Need to be confirmed
+#define UART_In_Buf_Max 		5;		// ***** Need to be confirmed
+#define UART_Out_Buf_Max		5;		// ***** Need to be confirmed
 int 	UART_In_Buf_Index;
 int 	UART_Out_buf_Index;
 char 	UART_In_Buf[UART_In_Buf_Max];
@@ -146,15 +145,15 @@ int 	ACP_In_Buf_Index;
 int 	ACP_Out_Buf_Index;
 char 	ACP_In_Buf[ACP_In_Buf_Max];
 char 	ACP_Out_Buf[ACP_Out_Buf_Max];
-#define ACP_In_Buf_Max 		5;		// ***** Need to be confirmed
-#define ACP_Out_Buf_Max		5;		// ***** Need to be confirmed
+#define ACP_In_Buf_Max 		5;			// ***** Need to be confirmed
+#define ACP_Out_Buf_Max		5;			// ***** Need to be confirmed
 
 
 
 // ***** Declare related to ADC
 
-unsigned int   	SPI_ConvertedData	// 2 bytes
-int 			ConvertedData		// 
+unsigned int   	SPI_ConvertedData		// 2 bytes
+int 			ConvertedData			// 
 
 
 // ***** Declare related to ACUD
@@ -177,14 +176,14 @@ int 	ACUD_ID
 		|      4	 |  SERIAL PORT	 |   0023h  |
 		|      5	 |TIMER/COUNTER 2|	 002Bh  | */
 	
-void IIMER0_NmS() interrupt 1 {		// Timer0 INT vector=000Bh
+void IIMER0_NmS() interrupt 1 {			// Timer0 INT vector=000Bh
 	
-	Key_Detect();					// Udate Key present status
-	ADC_Detect();					// Update Temperture status
+	Key_Detect();						// Udate Key present status
+	ADC_Detect();						// Update Temperture status
 	
 }
 
-void mS_Delay(int m){				//	Delay ms 
+void mS_Delay(int m){					// Delay ms 
 	
 	int i,j;						// 宣告整數變數i,j,N 
 	
@@ -196,7 +195,7 @@ void mS_Delay(int m){				//	Delay ms
 	#endif
 }
 
-void uS_Delay (int u){				// Delay us, 52us or 104us
+void uS_Delay (int u){					// Delay us, 52us or 104us
 
 
 
@@ -218,8 +217,8 @@ void PC_UART_Init(float Fosc ,int Baudrate){	// include T1 init
 		SBUF		Serial Buffer holds the data to be transmitted and the data received 
 	*/
 	
-	SCON=0X40;						// SCON=01000000B, Mode 1 ,8 bit data and 1 stop bit, 
-	REN=1;							// SCON=01010000B, Enable serial reception
+	SCON=0X40;							// SCON=01000000B, Mode 1 ,8 bit data and 1 stop bit, 
+	REN=1;								// SCON=01010000B, Enable serial reception
 	/* SCON: Serial Control Register
 		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
 		| SM0  | SM1  | SM2  | REN  | TB8  | RB8  |  TI  |  RI  |
@@ -247,8 +246,8 @@ void PC_UART_Init(float Fosc ,int Baudrate){	// include T1 init
 			接收完畢旗號，此位元須自行清除,以便等待下一個RI=1中斷出現
 	*/
 
-	TMOD&=0x0F						// Reset Timer 1 
-	TMOD|=0x20; 					// TMOD=00100000B, Timer1 in Mode 2, Auto reload mode.
+	TMOD&=0x0F							// Reset Timer 1 
+	TMOD|=0x20; 						// TMOD=00100000B, Timer1 in Mode 2, Auto reload mode.
 	/* TMOD: Timer Mode Register:	
 		| Tmler 1					| Timer 0                   |
 		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
@@ -282,7 +281,7 @@ void PC_UART_Init(float Fosc ,int Baudrate){	// include T1 init
 		| 11.059MHz|   2400    |     1     |     2     |    0XFD    | 	
 	*/
 
-	TR1=1;     						// TCON.TR1=1, Timer 1 start running
+	TR1=1;     							// TCON.TR1=1, Timer 1 start running
 	/* TCON: Related to Timer:
 		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
 		| TF1  | TR1  | TF0  | TR0  |      |      |      |      |
@@ -308,7 +307,7 @@ void PC_UART_Init(float Fosc ,int Baudrate){	// include T1 init
 	
 	UART_In_Buf_Index = 0;
 	UART_Out_Buf_Index = 0;
-	485Tx_PC = 0;					// RS485 Rx enable
+	485Tx_PC = 0;						// RS485 Tx disable (= Rx enable)
 }
 
 int PC_Tx_Handler(int *Tx_Data_Ptr, int Len){
@@ -316,37 +315,37 @@ int PC_Tx_Handler(int *Tx_Data_Ptr, int Len){
 	
 	int i;
 	
-	if(!(Flag.UART_Tx_Busy_Flg)){	// UART Tx avilable
+	if(!(Flag.UART_Tx_Busy_Flg)){		// UART Tx avilable
 	
-		Flag.UART_Tx_Busy_Flg = 1; 	// clear by PC_UART_RxTx() interrupt 4
+		Flag.UART_Tx_Busy_Flg = 1; 		// clear by PC_UART_RxTx() interrupt 4
 
 		for (i=0,i<Len,i++) {
 			UART_Out_Buf[i]=*Tx_Data_Ptr;
 			Tx_Data_Ptr++;
 		}
-		UART_Out_Buf_Index = 0;		// Initial UART_Out_Buf_Index
+		UART_Out_Buf_Index = 0;			// Initial UART_Out_Buf_Index
 		//FLAG.PC_Tx_Pending_Flg = 0;
-		TI=1; 						// Triger UART_ISR() to start UART_Tx 
+		TI=1; 							// Triger UART_ISR() to start UART_Tx 
 		
-		return 1;					// data transmit successful
+		return 1;						// data transmit successful
 	}
 	else {
 		
-		return 0;					// data transmit failure
+		return 0;						// data transmit failure
 
 	}
 }
 
-void PC_UART_RxTx() interrupt 4 { 	// UART INT, vector=0023h
+void PC_UART_RxTx() interrupt 4 { 		// UART INT, vector=0023h
 	
-	EA=0;							// Suspend all interrupt
+	EA=0;								// Suspend all interrupt
 	
-	if ( RI ){ 						// SCON.RI, RI=1 means new content have received                       	
+	if ( RI ){ 							// SCON.RI, RI=1 means new content have received                       	
 		
 		if( UART_In_Buf_Index < UART_In_Buf_Max){
 			UART_In_Buf[UART_In_Buf_Index] = SBUF;	
 			UART_In_Buf_Index++;
-			RI = 0;					// SCON.RI=0, force UART_Rx ready to receive again
+			RI = 0;						// SCON.RI=0, force UART_Rx ready to receive again
 		}
 		else {	// (UART_In_Buf_Index >= UART_In_Buf_Max 
 
@@ -412,7 +411,6 @@ int ACP_Tx_Handler(int *Tx_Data_Ptr, int Len){
 		
 		ACP_IOSerial_Tx();				// Call IOSerial_Tx_ACP() to transmit data via ACP
 		
-		
 		return 1;						// data transmit successful
 	}
 	else {
@@ -420,7 +418,6 @@ int ACP_Tx_Handler(int *Tx_Data_Ptr, int Len){
 		return 0;						// data transmit failure
 
 	}
-
 }
 
 void ACP_IOSerial_Tx(){					// CACP_Out_Buf[] was set ready and call by ACP_Tx_Handler(), 
@@ -465,15 +462,18 @@ void ACP_IOSerial_Rx() interrupt 2 {	// EXT1 INT, vector=0013h, UART Simulator
 	
 	uS_Delay(52);
 	
-	for (i=0;i<8,i++) {
+	for (i=0;i<8,i++){
 		
-		if (Serial_RxD0 == 1) {
+		if (Serial_RxD0 == 1){
 			ACP_RBUF |= 1;
-			ACP_RBUF << 1;				//ACP_SBUF left shift 1 bit 
+			ACP_RBUF << 1;				// ACP_SBUF left shift 1 bit 
 			uS_Delay(104);
-		} else
-		
-	} 
+		} else {
+			
+			
+			
+		} 
+	}
 	
 	if( ACP_In_Buf_Index < UART_In_Buf_Max){
 			ACP_In_Buf[ACP_In_Buf_Index] = ACP_RBUF;	
@@ -485,6 +485,7 @@ void ACP_IOSerial_Rx() interrupt 2 {	// EXT1 INT, vector=0013h, UART Simulator
 	}
 
 	EA = 1;								// Resume all interrupt
+	
 }
 
 
@@ -515,8 +516,8 @@ void ADC_SPI_Init(){
 	SPI_CS = 1;
 	SPI_CS = 0;
 
-	if (i=0;i<14;i++){	// Transmit 14(13-0) bit
-		SPI_DIN = 0;	// bit 11 = 0, select CH = 0	
+	if (i=0;i<14;i++){					// Transmit 14(13-0) bit
+		SPI_DIN = 0;					// bit 11 = 0, select CH = 0	
 		SPI_SCLK = 0;
 		SPI_SCLK = 1	
 	}
@@ -524,7 +525,7 @@ void ADC_SPI_Init(){
 	Flag.Rd_ADC_Busy_Flg = 0;
 }
 
-Rd_ADC( ){				// n=10 or 12, n bits convert resolution
+float Rd_ADC( ){				// n=10 or 12, n bits convert resolution
 	int i;
 	float CovertedVolt = 0;
 	
@@ -538,7 +539,7 @@ Rd_ADC( ){				// n=10 or 12, n bits convert resolution
 			SPI_SCLK = 1;
 			SPI_SCLK = 0;
 			if (SPI_DO){
-				ConvertedVolt |= 0x0001);	// set LSB = 1
+				ConvertedVolt |= 0x0001);		// set LSB = 1
 			}else {
 				ConvertedVolt &= 0xFFFE;   		// set LSB = 0
 			}
