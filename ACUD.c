@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W072  H1630
+// Ver : W072  H2030
 // On going: ACP_IOSerial_Rx() interrupt 2
 
 
@@ -725,16 +725,23 @@ Main(){
 void PC_StateEvent(){
 
 	char 	*Command;
-	int 	Len 
+	int 	Resp;
 
 	while(Flag.PC_Rx_Ready_Flg){
 
 		switch(UART_In_Buf)
 			case: 
 				/* perform properly reaction */
+				
+				
+				
+				/* Reply acknowledge back to PC */
+				Command = A+"ACUD_ID"+"command string"+Enter
+				Resp = PC_Tx_Handler(&Command)
+				if (RES == 1)
+					
 			
-			
-				bread;
+				break;
 				
 			case: 
 				/* perform properly reaction */
@@ -746,14 +753,12 @@ void PC_StateEvent(){
 				/* perform properly reaction */
 			
 	
-				bread;
+				break;
 				
-		/* Reply acknowledge back to PC */
-			Res = PC_Tx_Handler(&Command, Len)
-			if (RES == 1)
-				Flag.PC_Rx_Ready_Flg = 0
+		
 					
 	}
+	Flag.PC_Rx_Ready_Flg = 0
 }
 
 /* ACP Event manipulate */
