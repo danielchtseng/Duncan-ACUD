@@ -2,11 +2,11 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W072  H0730
-//   
+// Ver : W072  H1530
+// On going: ACP_IOSerial_Rx() interrupt 2
 
 
-// @@@@@@@@@@ Daclare @@@@@@@@@@
+// @@@@@@@@@@ Declare @@@@@@@@@@
 
 #include <reg51.h>
 
@@ -131,6 +131,7 @@ union Bit_Field {								// all variables in union share same memory
 #define Baudrate				9600;			// ***** Need to be confirmed
 #define UART_In_Buf_Max 		5;				// ***** Need to be confirmed
 #define UART_Out_Buf_Max		5;				// ***** Need to be confirmed
+#define Enter					0x13;			// ASCII 13: carry Return
 int 	UART_In_Buf_Index;
 int 	UART_Out_buf_Index;
 char 	UART_In_Buf[UART_In_Buf_Max];
@@ -139,9 +140,11 @@ char 	UART_Out_Buf[UART_Out_Buf_Max];
 
 // Declare related to ACP
 // related to IOSerial 
-int 	ACP_RBUF;
-int 	ACP_TBUF;
-// related to Handler 
+char    IOSerial_RBUF
+char    IOSerial_TBUF
+
+
+// related to Handler
 int 	ACP_In_Buf_Index;
 int 	ACP_Out_Buf_Index;
 char 	ACP_In_Buf[ACP_In_Buf_Max];
@@ -313,19 +316,23 @@ void PC_UART_Init(float Fosc ,int Baudrate){	// Include T1 init
 
 }
 
-int PC_Tx_Handler(int *Tx_Data_Ptr, int Len){
-	// data need to be port to UART_Out_Buf[] before by way of UART
+int PC_Tx_Handler(int *Tx_Data_Ptr){
+	/* data need to be ported to UART_Out_Buf[] before by way of UART */
 	
-	int i;
+	int i = 0;
+	char PC_TBUF;
 	
 	if(!(Flag.UART_Tx_Busy_Flg)){				// UART Tx avilable
-	
 		Flag.UART_Tx_Busy_Flg = 1; 				// clear by PC_UART_RxTx() interrupt 4
 
-		for (i=0,i<Len,i++) {
+		PC_TBUF = *Tx_Data_Ptr;
+		while(PC_TBUF!= Enter){
 			UART_Out_Buf[i]=*Tx_Data_Ptr;
+			i++;
 			Tx_Data_Ptr++;
 		}
+		UART_Out_Buf[i]=*Tx_Data_Ptr;			// Put "Enter" into UART_Out_Buf[]
+		
 		UART_Out_Buf_Index = 0;					// Initial UART_Out_Buf_Index
 		TI=1; 									// Triger UART_ISR() to start UART_Tx 
 		
@@ -344,7 +351,9 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 	
 	if ( RI ){ 									// SCON.RI, RI=1 means new content have received                       	
 		
-		if( UART_In_Buf_Index < UART_In_Buf_Max){
+		if (SBUF != Enter) {					
+		/* "Enter" emerged */
+		
 			UART_In_Buf[UART_In_Buf_Index] = SBUF;	
 			UART_In_Buf_Index++;
 			RI = 0;								// SCON.RI=0, force UART_Rx ready to receive again
@@ -352,29 +361,27 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 		else {									// UART_In_Buf_Index >= UART_In_Buf_Max 
 
 			UART_In_Buf_Index = 0;				// Reset UART_In_Buf_Index
-			Flag.PC_Rx_Ready_Flg = 1; 		// For PC_StateEvent()
+			Flag.PC_Rx_Ready_Flg = 1; 			// For PC_StateEvent()
 		}
 	}
 
 	if ( TI ){    								// SCON.TI, TI=1 means previous content have been sent.   
 		
 		// Flag.UART_Tx_Busy_Flg had been set in PC_Tx_Handler()		
+		SBUF = UART_Out_Buf[UART_Out_Buf_Index];
 		
-		if ( UART_Out_Buf_Index < UART_Out_Buf_Max ){
-			
+		if ((SBUF != Enter)) {					
+		/* "Enter" emerged */
+		
 			485Tx_PC = 1; 						// Enable RS485 Tx 
-			
-			SBUF = UART_Out_Buf[UART_Out_Buf_Index];
 			UART_Out_Buf_Index++;
-			TI = 0;								// SCON.TI=0, force UART_Tx ready to sent again
 		}			
 		else {									// UART Tx completed, UART_Outbuf_Index >= UART_Outbuf_Max 
-	
 			UART_Out_Buf_Index=0;				// Reset UART_Out_Buf_Index
 			Flag.UART_Tx_Busy_Flg = 0;			// Clear UART Tx busy
-			
 			485Tx_PC = 0; 						// Disable RS485 Tx ( =Rx enable)
-		}	
+		}
+		TI = 0;									// SCON.TI=0, UART_Tx ready to sent 
 	}
 	
 	EA=1;										// Resume all interrupt
@@ -384,9 +391,8 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 
 // ##### ACP TxRx
 void ACP_IOSerial_Init(){
-	
-	ACP_RBUF=0;
-	ACP_TBUF=0;
+	IOSerial_RBUF = 0;
+	IOSerial_TBUF = 0;
 	ACP_In_Buf_Index = 0;	
 	ACP_Out_Buf_Index = 0;
 	
@@ -396,24 +402,29 @@ void ACP_IOSerial_Init(){
 												// Ex1 is enabled in main()
 }
 
-int ACP_Tx_Handler(int *Tx_Data_Ptr, int Len){
-
+int ACP_Tx_Handler(int *Tx_Data_Ptr){
+	/* data need to be ported to UART_Out_Buf[] before by way of UART */
+	
 	// sbit Serial_RxD0 = P3^7;					// RD
 	// sbit Serial_TxD0	= P3^6;					// WR
 	// sbit 485Tx_ACP   = P3^5;					// T1
 	// sbit INT1_Serial = P3^3;					// INT1, connect to pin RxD0
-
-	// data need to be port to UART_Out_Buf[] before by way of UART
-	if(!(FLAG.IOSerial_Tx_Busy_Flg)){			// IOSerial Tx avilable
 	
+	int i = 0;
+	char ACP_TBUF;
+	
+	if(!(FLAG.IOSerial_Tx_Busy_Flg)){			// IOSerial Tx avilable
 		Flag.IOSerial_Tx_Busy_Flg = 1; 			// clear by ACP_IOSerial_Tx()
-
-		for (i=0,i<Len,i++) {
+		
+		ACP_TBUF=*Tx_Data_Ptr;
+		while(ACP_TBUF != Enter) {
 			ACP_Out_Buf[i]=*Tx_Data_Ptr;
+			i++;
 			Tx_Data_Ptr++;
 		}
-		ACP_Out_Buf_Index = 0;					// Initial UART_Out_Buf_Index
+		ACP_Out_Buf[i]=*Tx_Data_Ptr;			// Put "Enter" into ACP_Out_Buf[]
 		
+		ACP_Out_Buf_Index = 0;					// Initial UART_Out_Buf_Index
 		ACP_IOSerial_Tx();						// Call IOSerial_Tx_ACP() to transmit data via ACP
 		
 		return 1;								// data transmit permit
@@ -427,33 +438,36 @@ int ACP_Tx_Handler(int *Tx_Data_Ptr, int Len){
 
 void ACP_IOSerial_Tx(){							// CACP_Out_Buf[] was set ready and call by ACP_Tx_Handler(), 
 	
-	int i;
+	int i = 0;
+
+	IOSerial_TBUF = ACP_Out_Buf[ACP_Out_Buf_Index];
 	
-	for (ACP_Out_Buf_Index=0;i<ACP_Out_Buf_Max,ACP_Out_Buf_Index++){
+	while (IOSerial_TBUF != Enter){
 		
 		EA = 0;									// Suspending all interrupt happen 
 		/* Interrupt disable for 1 byte period only */
 										
 		485Tx_ACP = 1;							// RS485 Tx enable (= Rx disable)
-		
-		ACP_TBUF = ACP_Out_Buf[ACP_Out_Buf_Index];
 		Serial_TxD0 = 0;						// sent Start bit "0" on P3.6(WR)
 		uS_Delay(104);
 		for (i=0;i<8; i++) {
-			if (ACP_TBUF & 0x80) {
+			if (IOSerial_TBUF & 0x80) {
 				Serial_TxD0 = 1;				// sent out "1"
 			}else {
 				Serial_TxD0 = 0;				// Sent out "0"
 			}
-			ACP_TBUF <<= 1; 					// ACP_TBUF left shift 1 bit 
+			IOSerial_TBUF <<= 1; 				// IOSerial_TBUF left shift 1 bit 
 			uS_Delay(104);
 		}
 		Serial_TxD0 = 1;						// sent Stop bit "1" on P3.6(WR)
 		uS_Delay(104);	
 		
+		ACP_Out_Buf_Index++
+		IOSerial_TBUF = ACP_Out_Buf[ACP_Out_Buf_Index];
+		
 		EA = 1;									// Resume all interrupt
 	}
-	
+	485Tx_ACP = 0;
 	Flag.IOSerial_Tx_Busy_Flg = 0;				
 	/* For ACP_Tx_Handler(), to allow transmit again over IOSerial */
 		
@@ -481,37 +495,41 @@ void ACP_IOSerial_Rx() interrupt 2 {			// EX1 INT, vector=0013h, UART Simulator
 			uS_Delay(104);
 			
 			if (Serial_RxD0 == 1){
-				ACP_RBUF |= 1;
-				ACP_RBUF << 1;					// ACP_SBUF left shift 1 bit 
+				IOSerial_RBUF |= 1;
+				IOSerial_RBUF << 1;				// ACP_SBUF left shift 1 bit 
 
 			} else {
-				ACP_RBUF << 1;					// ACP_SBUF left shift 1 bit 
+				IOSerial_RBUF << 1;				// ACP_SBUF left shift 1 bit 
 			} 	
 		}
 		
-		uS_Delay(104);	
-	
-		if (!Serial_RxD0 == 1){ 
-	
-			if( ACP_In_Buf_Index < UART_In_Buf_Max){
-				ACP_In_Buf[ACP_In_Buf_Index] = ACP_RBUF;	
+		uS_Delay(104);					
+		if (!Serial_RxD0 == 1){ 				// Stop bit
+		/* One byte(10 bits) received sucessful */
+		
+			if(IOSerial_RBUF != Enter ){
+			/* String receiving not complete */
+			
+				ACP_In_Buf[ACP_In_Buf_Index] = IOSerial_RBUF;	
 				ACP_In_Buf_Index++;
 			}
-			else {									// ACP_In_Buf_Index >= ACP_In_Buf_Max 
-				ACP_RBUF=0;
-				ACP_In_Buf_Index = 0;				// Reset UART_Inbuf_Index
-				Flag.ACP_Rx_Ready_Flg = 1; 		// 
+			else {								// ACP_In_Buf_Index >= ACP_In_Buf_Max 
+			/* String receiving completed */
+			
+				IOSerial_RBUF=0;
+				ACP_In_Buf_Index = 0;			// Reset UART_Inbuf_Index
+				Flag.ACP_Rx_Ready_Flg = 1; 		// For ACP_StateEvent()
 			}
 		}
 	} else {
+		/* One byte(10 bits) received falure */
 	
-		/* Serial Rx error */	
-		ACP_RBUF=0;
+		IOSerial_RBUF=0;
 		ACP_In_Buf_Index = 0;					// Reset UART_Inbuf_Index
-		Flag.ACP_Rx_Ready_Flg = 0; 			// 
-		
-		EA = 1;									// Resume all interrupt
+		Flag.ACP_Rx_Ready_Flg = 0; 				// 
 	}
+	
+	EA = 1;									// Resume all interrupt
 }
 
 
@@ -586,10 +604,10 @@ float Rd_ADC( ){								// n=10 or 12, n bits convert resolution
 // ##### Timer
 void TIMER0_NmS_Init(int N){					// N*mS timer
 
-	TMOD&=0xF0;									// Clear Timer 0 
-	TMOD|=0x01; 								// Mode 1, 16 bit timer/count mode	
-	TH0=(65536-(N*1000/(Fosc*1000000/12)))/256;
-	TL0=(65536-(N*1000/(Fosc*1000000/12))%256;	
+	TMOD &= 0xF0;								// Clear Timer 0 
+	TMOD |= 0x01; 								// Mode 1, 16 bit timer/count mode	
+	TH0 = (65536-(N*1000/(Fosc*1000000/12)))/256;
+	TL0 = (65536-(N*1000/(Fosc*1000000/12))%256;	
 	TR0=1;;										// TCON.TR0=1, Timer 0 start running
 	/* TCON: Related to Timer:
 		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
