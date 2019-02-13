@@ -2,8 +2,8 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W073  H1600
-// On going: ACP_StateEvent()
+// Ver : W073  H2200
+// On going:
 
 
 // @@@@@@@@@@ Declare @@@@@@@@@@
@@ -34,7 +34,7 @@ sfr SCON 	= 0x98;
 sfr SBUF 	= 0x99;
 */
 
-/* SPF BIT 
+/* SPF BIT */
 // PSW   
 sbit CY   	= 0xD7;
 sbit AC   	= 0xD6;
@@ -44,26 +44,14 @@ sbit RS0  	= 0xD3;
 sbit OV   	= 0xD2;
 sbit P    	= 0xD0;
 
-// Port 1: 
-// SPI(Serial Peripheral Interface) Simulator
-sbit SPI_DO			= P1^0;
-sbit SPI_CS   		= P1^1;
-sbit SPI_SCLK 		= P1^2;
-sbit SPI_DIN  		= P1^3;
 
-// Port 3: 
-// Serial Simulator
-sbit Serial_RxD0	= P3^7;						// sbit RD   	= 0xB7;			// RD
-sbit Serial_TxD0	= P3^6;						// sbit WR      = 0xB6;			// WR
-sbit 485Tx_ACP		= P3^5;						// sbit T1      = 0xB5;			// T1
-sbit INT1_Serial	= P3^3;						// sbit INT1    = 0xB3;			// INT0, UART 
 						
-// UART
+/* UART */
 sbit 485Tx_PC   	= P3^2;						// sbit INT0    = 0xB2;			// UART TXD
 sbit UART_TxD1 		= P3^1;						// sbit TXD     = 0xB1;			// UARD RXD
 sbit UART_RxD1 		= P3^0;						// sbit RXD     = 0xB0;
 
-// TCON  
+/* TCON */
 sbit TF1  	= 0x8F;
 sbit TR1  	= 0x8E;
 sbit TF0  	= 0x8D;
@@ -73,7 +61,7 @@ sbit IT1  	= 0x8A;
 sbit IE0  	= 0x89;
 sbit IT0  	= 0x88;
 
-// SCON  
+/* SCON */ 
 sbit SM0  	= 0x9F;
 sbit SM1  	= 0x9E;
 sbit SM2  	= 0x9D;
@@ -83,14 +71,14 @@ sbit RB8  	= 0x9A;
 sbit TI   	= 0x99;
 sbit RI   	= 0x98;
 
-// IP   
+/* IP  */ 
 sbit PS   	= 0xBC;								// sbit PS  = 0xB8^4
 sbit PT1  	= 0xBB;								// sbit PT1 = 0xB8^3
 sbit PX1  	= 0xBA;								// sbit PX1 = 0xB8^2
 sbit PT0  	= 0xB9;								// sbit PT0 = 0xB8^1
 sbit PX0  	= 0xB8;								// sbit PX0 = 0xB8^0
 
-// IE   
+/* IE  */
 sbit EA   	= 0xAF;								// sbit EA  = 0xA8^7
 sbit ES   	= 0xAC;								// sbit ES  = 0xA8^4
 sbit ET1  	= 0xAB;								// sbit ET1 = 0xA8^3
@@ -101,16 +89,16 @@ sbit EX0  	= 0xA8;								// sbit EX0 = 0xA8^0
 
 
 
-// ***** Declare related to Communication
+/* Declare related to Communication */
 union Bit_Field {								// all variables in union share same memory
 	
-	unsigned Flag;
+	unsigned Comm;
 	Struct {		// 注意: type 必須為整數(signed or unsigned皆可)
 		// relate to PC
 		unsigned UART_Tx_Busy_Flg 		: 1;				
 		unsigned PC_Rx_Ready_Flg 		: 1;
 		// relate to ACP
-		unsigned IOSerial_Tx_Busy_Flg 	: 1;		
+		unsigned ACP_Tx_Busy_Flg 	: 1;		
 		unsigned ACP_Rx_Ready_Flg 		: 1;		
 		// relate to ADC
 		unsigned Rd_ADC_Busy_Flg 		: 1;
@@ -127,7 +115,10 @@ union Bit_Field {								// all variables in union share same memory
 //			unsigned int age : 1;
 //		} Flag;   						*/
 
-// Declare related to UART 		
+
+
+
+/* Declare related to UART */
 #define Fosc					22.1184;		// ***** Need to be confirmed (0r 11.0592 )
 #define Baudrate				9600;			// ***** Need to be confirmed
 #define UART_In_Buf_Max 		5;				// ***** Need to be confirmed
@@ -139,13 +130,14 @@ char 	UART_In_Buf[UART_In_Buf_Max];
 char 	UART_Out_Buf[UART_Out_Buf_Max];
 
 
-// Declare related to ACP
-// related to IOSerial 
-char    IOSerial_RBUF
-char    IOSerial_TBUF
 
-
-// related to Handler
+/* Declare related to ACP */
+// Port 3: 
+sbit INT1_ACP		= P3^3;						// sbit INT1    = 0xB3;			// INT0, UART 
+sbit 485Tx_ACP		= P3^5;						// sbit T1      = 0xB5;			// T1
+sbit ACP_TxD0		= P3^6;						// sbit WR      = 0xB6;			// WR
+sbit ACP_RxD0		= P3^7;						// sbit RD   	= 0xB7;			// RD
+// related to Handler 
 int 	ACP_In_Buf_Index;
 int 	ACP_Out_Buf_Index;
 char 	ACP_In_Buf[ACP_In_Buf_Max];
@@ -155,16 +147,49 @@ char 	ACP_Out_Buf[ACP_Out_Buf_Max];
 
 
 
-// ***** Declare related to ADC
+/* Declare related to ADC */
 
-unsigned int   	SPI_ConvertedData				// 2 bytes
+unsigned int   	ADC_ConvertedData				// 2 bytes
 int 			ConvertedData					 
+/* Port 1: */
+// ADC: SPI(Serial Peripheral Interface) Simulator
+sbit ADC_DO			= P1^0;
+sbit ADC_CS   		= P1^1;
+sbit ADC_SCLK 		= P1^2;
+sbit ADC_DIN  		= P1^3;
 
 
-// ***** Declare related to ACUD
-int		ACUD_ID;
+/* Declare related to ACUD */
 
+// Port 3: 
+sbit AIR_Heater		= P0^0;						// 
+sbit AIR_Cooler		= P0^1;						// 
+sbit Fan_L   		= P0^2;						// Fan speed 
+sbit Fan_M		    = P0^3;						// Fan speed 
+sbit Fan_H		    = P0^4;						// Fan speed 
 
+int		ACUD_ID_Dec;
+int 	Temperature_Setting;
+int		Temperature_Reality;
+int		Checkout_Air_Period;					// 10-60min in an hour
+
+union Bit_Field {								// all variables in union share same memory
+	
+	unsigned ACUD;
+	Struct {		// 注意: type 必須為整數(signed or unsigned皆可)
+		
+		unsigned Card_In_Flg 			: 1; 	// 1: card existing, 0: card dispear				
+		unsigned Air_Cool_Flg			: 1; 	// 1: cool, 0: warm
+		unsigned Air_Auto_Flg 			: 1; 	// 1: Auto mode, decide by ACP	
+		unsigned  						: 1;		
+		unsigned  						: 1;
+	}
+};
+
+#define 	Checkout_Defa_Temp	26;				// Default temperature
+#define 	Checkin_Defa_Temp	23;
+#define 	Auto_Temperature	23;
+#define     Auto_Defa_Period	10;				// Default period
 
 
 
@@ -191,8 +216,8 @@ void System_Init(){
 	*/
 	
 	PC_UART_Init(22.1184,9600);
-	ACP_IOSerial_Init();
-	ADC_SPI_Init();
+	ACP_Init();
+	ADC_Init();
 	TIMER0_NmS_Init(20);						// Timer0 20ms 
 	ACUD_Init();
 	
@@ -382,8 +407,8 @@ int PC_Tx_Handler(int *Tx_Data_Ptr){
 	int i = 0;
 	char PC_TBUF;
 	
-	if(!(Flag.UART_Tx_Busy_Flg)){				// UART Tx avilable
-		Flag.UART_Tx_Busy_Flg = 1; 				// clear by PC_UART_RxTx() interrupt 4
+	if(!(Comm.UART_Tx_Busy_Flg)){				// UART Tx avilable
+		Comm.UART_Tx_Busy_Flg = 1; 				// clear by PC_UART_RxTx() interrupt 4
 
 		PC_TBUF = *Tx_Data_Ptr;
 		while(PC_TBUF!= Enter){
@@ -421,13 +446,13 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 		else {									// UART_In_Buf_Index >= UART_In_Buf_Max 
 
 			UART_In_Buf_Index = 0;				// Reset UART_In_Buf_Index
-			Flag.PC_Rx_Ready_Flg = 1; 			// For PC_StateEvent()
+			Comm.PC_Rx_Ready_Flg = 1; 			// For PC_StateEvent()
 		}
 	}
 
 	if ( TI ){    								// SCON.TI, TI=1 means previous content have been sent.   
 		
-		// Flag.UART_Tx_Busy_Flg had been set in PC_Tx_Handler()		
+		// Comm.UART_Tx_Busy_Flg had been set in PC_Tx_Handler()		
 		SBUF = UART_Out_Buf[UART_Out_Buf_Index];
 		
 		if ((SBUF != Enter)) {					
@@ -438,7 +463,7 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 		}			
 		else {									// UART Tx completed, UART_Outbuf_Index >= UART_Outbuf_Max 
 			UART_Out_Buf_Index=0;				// Reset UART_Out_Buf_Index
-			Flag.UART_Tx_Busy_Flg = 0;			// Clear UART Tx busy
+			Comm.UART_Tx_Busy_Flg = 0;			// Clear UART Tx busy
 			485Tx_PC = 0; 						// Disable RS485 Tx ( =Rx enable)
 		}
 		TI = 0;									// SCON.TI=0, UART_Tx ready to sent 
@@ -450,9 +475,9 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 
 
 // ##### ACP Communication
-void ACP_IOSerial_Init(){
-	IOSerial_RBUF = 0;
-	IOSerial_TBUF = 0;
+void ACP_Init(){
+	ACP_RBUF = 0;
+	ACP_TBUF = 0;
 	ACP_In_Buf_Index = 0;	
 	ACP_Out_Buf_Index = 0;
 	
@@ -465,16 +490,16 @@ void ACP_IOSerial_Init(){
 int ACP_Tx_Handler(int *Tx_Data_Ptr){
 	/* data need to be ported to UART_Out_Buf[] before by way of UART */
 	
-	// sbit Serial_RxD0 = P3^7;					// RD
-	// sbit Serial_TxD0	= P3^6;					// WR
+	// sbit ACP_RxD0 	= P3^7;					// RD
+	// sbit ACP_TxD0	= P3^6;					// WR
 	// sbit 485Tx_ACP   = P3^5;					// T1
-	// sbit INT1_Serial = P3^3;					// INT1, connect to pin RxD0
+	// sbit INT1_ACP 	= P3^3;					// INT1, connect to pin RxD0
 	
 	int i = 0;
 	char ACP_TBUF;
 	
-	if(!(FLAG.IOSerial_Tx_Busy_Flg)){			// IOSerial Tx avilable
-		Flag.IOSerial_Tx_Busy_Flg = 1; 			// clear by ACP_IOSerial_Tx()
+	if(!(Comm.ACP_Tx_Busy_Flg)){			// IOSerial Tx avilable
+		Comm.ACP_Tx_Busy_Flg = 1; 			// clear by ACP_Tx()
 		
 		ACP_TBUF=*Tx_Data_Ptr;
 		while(ACP_TBUF != Enter) {
@@ -485,7 +510,7 @@ int ACP_Tx_Handler(int *Tx_Data_Ptr){
 		ACP_Out_Buf[i]=*Tx_Data_Ptr;			// Put "Enter" into ACP_Out_Buf[]
 		
 		ACP_Out_Buf_Index = 0;					// Initial UART_Out_Buf_Index
-		ACP_IOSerial_Tx();						// Call IOSerial_Tx_ACP() to transmit data via ACP
+		ACP_Tx();						// Call ACP_Tx() to transmit data via ACP
 		
 		return 1;								// data transmit permit
 	}
@@ -496,49 +521,52 @@ int ACP_Tx_Handler(int *Tx_Data_Ptr){
 	}
 }
 
-void ACP_IOSerial_Tx(){							// CACP_Out_Buf[] was set ready and call by ACP_Tx_Handler(), 
+void ACP_Tx(){							// CACP_Out_Buf[] was set ready and call by ACP_Tx_Handler(), 
 	
 	int i = 0;
 
-	IOSerial_TBUF = ACP_Out_Buf[ACP_Out_Buf_Index];
+	ACP_TBUF = ACP_Out_Buf[ACP_Out_Buf_Index];
 	
-	while (IOSerial_TBUF != Enter){
+	while (ACP_TBUF != Enter){
 		
 		EA = 0;									// Suspending all interrupt happen 
 		/* Interrupt disable for 1 byte period only */
 										
 		485Tx_ACP = 1;							// RS485 Tx enable (= Rx disable)
-		Serial_TxD0 = 0;						// sent Start bit "0" on P3.6(WR)
+		ACP_TxD0 = 0;						// sent Start bit "0" on P3.6(WR)
 		uS_Delay(104);
 		for (i=0;i<8; i++) {
-			if (IOSerial_TBUF & 0x80) {
-				Serial_TxD0 = 1;				// sent out "1"
+			if (ACP_TBUF & 0x80) {
+				ACP_TxD0 = 1;				// sent out "1"
 			}else {
-				Serial_TxD0 = 0;				// Sent out "0"
+				ACP_TxD0 = 0;				// Sent out "0"
 			}
-			IOSerial_TBUF <<= 1; 				// IOSerial_TBUF left shift 1 bit 
+			ACP_TBUF <<= 1; 				// ACP_TBUF left shift 1 bit 
 			uS_Delay(104);
 		}
-		Serial_TxD0 = 1;						// sent Stop bit "1" on P3.6(WR)
+		ACP_TxD0 = 1;						// sent Stop bit "1" on P3.6(WR)
 		uS_Delay(104);	
 		
 		ACP_Out_Buf_Index++
-		IOSerial_TBUF = ACP_Out_Buf[ACP_Out_Buf_Index];
+		ACP_TBUF = ACP_Out_Buf[ACP_Out_Buf_Index];
 		
 		EA = 1;									// Resume all interrupt
 	}
 	485Tx_ACP = 0;
-	Flag.IOSerial_Tx_Busy_Flg = 0;				
+	Comm.ACP_Tx_Busy_Flg = 0;				
 	/* For ACP_Tx_Handler(), to allow transmit again over IOSerial */
 		
 }
 
-void ACP_IOSerial_Rx() interrupt 2 {			// EX1 INT, vector=0013h, UART Simulator
-												// Tx no need to using interrupt. 
-	// sbit Serial_RxD0 = P3^7;					// RD
-	// sbit Serial_TxD0	= P3^6;					// WR
+void ACP_Rx() interrupt 2 {			// EX1 INT, vector=0013h, UART Simulator
+	
+	char ACP_RBUF;
+	
+	// Tx no need to using interrupt. 
+	// sbit ACP_RxD0 	= P3^7;					// RD
+	// sbit ACP_TxD0	= P3^6;					// WR
 	// sbit 485Tx_ACP   = P3^5;					// T1
-	// sbit INT1_Serial = P3^3;					// INT1, connect to pin RxD0
+	// sbit INT1_ACP 	= P3^3;					// INT1, connect to pin RxD0
 	
 	EA = 0; 									// Suspending all interrupt happen 
 	// EX = 0; 		
@@ -547,44 +575,44 @@ void ACP_IOSerial_Rx() interrupt 2 {			// EX1 INT, vector=0013h, UART Simulator
 	
 	uS_Delay(52);
 	
-	if (!Serial_RxD0 == 0){ 					// Start bit "0"
+	if (!ACP_RxD0 == 0){ 					// Start bit "0"
 
 		for (i=0;i<8,i++){
 			uS_Delay(104);
 			
-			if (Serial_RxD0 == 1){
-				IOSerial_RBUF |= 1;
-				IOSerial_RBUF << 1;				// ACP_SBUF left shift 1 bit 
+			if (ACP_RxD0 == 1){
+				ACP_RBUF |= 1;
+				ACP_RBUF << 1;				// ACP_SBUF left shift 1 bit 
 
 			} else {
-				IOSerial_RBUF << 1;				// ACP_SBUF left shift 1 bit 
+				ACP_RBUF << 1;				// ACP_SBUF left shift 1 bit 
 			} 	
 		}
 		
 		uS_Delay(104);					
-		if (!Serial_RxD0 == 1){ 				// Stop bit
+		if (ACP_RxD0 != 1){ 				// Stop bit
 		/* One byte(10 bits) received sucessful */
 		
-			if(IOSerial_RBUF != Enter ){
+			if(ACP_RBUF != Enter ){
 			/* String receiving not complete */
 			
-				ACP_In_Buf[ACP_In_Buf_Index] = IOSerial_RBUF;	
+				ACP_In_Buf[ACP_In_Buf_Index] = ACP_RBUF;	
 				ACP_In_Buf_Index++;
 			}
 			else {								// ACP_In_Buf_Index >= ACP_In_Buf_Max 
 			/* String receiving completed */
 			
-				IOSerial_RBUF=0;
+				ACP_RBUF=0;
 				ACP_In_Buf_Index = 0;			// Reset UART_Inbuf_Index
-				Flag.ACP_Rx_Ready_Flg = 1; 		// For ACP_StateEvent()
+				Comm.ACP_Rx_Ready_Flg = 1; 		// For ACP_StateEvent()
 			}
 		}
 	} else {
 		/* One byte(10 bits) received failure */
 	
-		IOSerial_RBUF=0;
+		ACP_RBUF=0;
 		ACP_In_Buf_Index = 0;					// Reset UART_Inbuf_Index
-		Flag.ACP_Rx_Ready_Flg = 0; 				// 
+		Comm.ACP_Rx_Ready_Flg = 0; 				// 
 	}
 	
 	EA = 1;										// Resume all interrupt
@@ -593,7 +621,7 @@ void ACP_IOSerial_Rx() interrupt 2 {			// EX1 INT, vector=0013h, UART Simulator
 
 
 // ##### Temperture Reading: ADC AD7911
-void ADC_SPI_Init(){
+void ADC_Init(){
 /* ADC AD7911 
 // a minimum of 14 serial clock cycles, respectively, are needed 
 // to complete the conversion and access the complete conversion result.
@@ -614,42 +642,42 @@ void ADC_SPI_Init(){
 // result with MSB provided first, followed by two trailing zeros.
 */
 	int i;
-	SPI_SCLK = 1;
-	SPI_CS = 1;
-	SPI_CS = 0;
+	ADC_SCLK = 1;
+	ADC_CS = 1;
+	ADC_CS = 0;
 
 	if (i=0;i<14;i++){							// Transmit 14(13-0) bit
-		SPI_DIN = 0;							// bit 11 = 0, select CH = 0	
-		SPI_SCLK = 0;
-		SPI_SCLK = 1	
+		ADC_DIN = 0;							// bit 11 = 0, select CH = 0	
+		ADC_SCLK = 0;
+		ADC_SCLK = 1	
 	}
-	SPI_CS = 1;
-	Flag.Rd_ADC_Busy_Flg = 0;
+	ADC_CS = 1;
+	Comm.Rd_ADC_Busy_Flg = 0;
 }
 
 float Rd_ADC( ){								// n=10 or 12, n bits convert resolution
 	int i;
 	float CovertedVolt = 0;
 	
-	if (!(Flag.Rd_ADC_Busy_Flg)) {
-		Flag.Rd_ADC_Busy_Flg = 1;
-		SPI_DO = 1;
-		SPI_CS = 1;
-		SPI_SCLK = 0;
+	if (!(Comm.Rd_ADC_Busy_Flg)) {
+		Comm.Rd_ADC_Busy_Flg = 1;
+		ADC_DO = 1;
+		ADC_CS = 1;
+		ADC_SCLK = 0;
 
 		if (i=0;i<14;i++){
-			SPI_SCLK = 1;
-			SPI_SCLK = 0;
-			if (SPI_DO){
+			ADC_SCLK = 1;
+			ADC_SCLK = 0;
+			if (ADC_DO){
 				ConvertedVolt |= 0x0001);		// set LSB = 1
 			}else {
 				ConvertedVolt &= 0xFFFE;   		// set LSB = 0
 			}
-			SPI_Data <<= 1 ;
+			ADC_Data <<= 1 ;
 		}
 	
 		ConvertedVolt = ConvertedVolt * 5 / (2 ^ 10 - 1);
-		Flag.Rd_ADC_Busy_Flg = 0;
+		Comm.Rd_ADC_Busy_Flg = 0;
 		return CovertedVolt;
 	}
 	else {
@@ -662,25 +690,24 @@ float Rd_ADC( ){								// n=10 or 12, n bits convert resolution
 // ##### ACUD
 void ACUD_Init(){
 	
-	int HEX;
+	int Hex;
 	
-	P2=0xFF;
-	HEX = P2;								// Reading DIP switch
+	P2 = 0xFF;
+	Hex = P2;								// Reading DIP switch
 
-	ACUD_ID = H2D(HEX);	
+	ACUD_ID_Dec = Hex2Dec(Hex);	
 	
 }
 
-int H2D(int x){
-      int DEC, remainder, count = 0;
-      while(x > 0)
-      {
+int Hex2Dec(int x){
+      int Dec, remainder, count = 0;
+      while(x > 0){
             remainder = x % 10;
             decimal_number = DEC + remainder * pow(16, count);
             x = x / 10;
             count++;
       }
-      return DEC;
+      return Dec;
 }
 
 
@@ -745,10 +772,10 @@ void PC_StateEvent(){
 	
 	int 	Resp;
 
-	if(Flag.PC_Rx_Ready_Flg){
+	if(Comm.PC_Rx_Ready_Flg){
 
 
-		if ( Strcpm ( ACP_In_Buf,"command string") = 0) {
+		if ( Strcpm ( ACP_In_Buf,"command string 1") = 0) {
 		/* The content of ACP_In_Buf is not including "Enter" */
 			
 			/* perform properly reaction */
@@ -761,30 +788,37 @@ void PC_StateEvent(){
 
 			/* Acknowledge back to PC */
 			strcopy(Ack,"A");
-			strcat(Ack,ACUD_ID);
-			strcat(Ack,"command string");
+			strcat(Ack,ACUD_ID_Dec);
+			strcat(Ack,"command string 1");
 			strcat(Ack,Enter);
 				
 			Resp = PC_Tx_Handler(&Ack)
 			if(Resp == 1){
 			/* anknowledge back to PC successful */
 				ACP_In_Buf[ACP_In_Buf_Max] = {0};	
-				Flag.PC_Rx_Ready_Flg = 0;
+				Comm.PC_Rx_Ready_Flg = 0;
 			}		
 			else {
 			/* anknowledge back to PC failure */	
 			
-				Flag.PC_Rx_Ready_Flg = 0;
+				Comm.PC_Rx_Ready_Flg = 0;
 				/* Ignore this failure. assuming command will be resend again by PC site */
 			}
-		} 	
+		}
+
+		if ( Strcpm ( ACP_In_Buf,"command string 2") = 0) {
+			
+			
+			
+
+		}
 	}
 }
 
 /* ACP Event manipulate */
 void ACP_StateEvent(){
 
-	while(Flag.ACP_Rx_Ready_Flg){
+	while(Comm.ACP_Rx_Ready_Flg){
 
 		switch(ACP_In_Buf)
 			case: 
@@ -808,20 +842,97 @@ void ACP_StateEvent(){
 		/* Reply acknowledge back to ACP */
 			Res = ACP_Tx_Handler(&Command, Len)
 			if (RES == 1)
-				Flag.ACP_Rx_Ready_Flg = 0
+				Comm.ACP_Rx_Ready_Flg = 0
 	}
 }
 
-/* ACUD Event manipulate */
-void ACUD_StateEvent(){
-	
-	
-	
 
-}
+
+
 
 /* Aircondition manipulate */
 void Air_Manipulate(){
-	Tempeture_Detect();							// depend on the command in Temo_Status 
-	Fan_Adjust();								// depend on the command in Fan_Status 
+	
+	Card_In_Detect()
+	Tempeture_Reality_Detect();					// depend on the command in Temo_Status 
+	
+	
+	
+	if(Card_In_Flg){
+	/* Card present */	
+		
+		if(Air_Auto_Flg){
+		/* Performing Auto Mode */
+			Air_Control();
+			Fan_Anto_Control();
+	
+	
+		}
+		else {
+		/* Performing Menu Mode */
+			Air_Control();
+			Fan_Menu_Control();
+		}
+	}
+	else {	
+	/* Card absent */
+	
+		if( timer < Checkout_Air_Period) {
+	
+			Air_Control();
+			Fan_Anto_Control();
+		} 
+		else if {timer<60){
+			
+			AIR_Cooler = 0;							// Turn cooler off		
+			AIR_Heater = 0; 						// Turn Herter off
+			
+			} 
+			else {
+				timer = 0;
+			}
+			
+		}
+	}
+	
+	
+}	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+Air_Control(){
+	if(ACUD.Air_Cool_Flg) {
+		AIR_Cooler = 1;							// Turn cooler on		
+		AIR_Heater = 0;							// Turn Herter off
+	}
+	else {
+		AIR_Cooler = 0;							// Turn cooler off		
+		AIR_Heater = 1;							// Turn Herter on
+	}
+	
 }
+	
+	
+Fan_Anto_Control(){
+
+
+
+
+}
+
+Fan_Menu_Control(){
+	
+	
+}
+
+
+
+
+
+
