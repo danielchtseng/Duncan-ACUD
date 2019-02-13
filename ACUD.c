@@ -2,15 +2,15 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W072  H2030
-// On going: ACP_IOSerial_Rx() interrupt 2
+// Ver : W073  H1600
+// On going: ACP_StateEvent()
 
 
 // @@@@@@@@@@ Declare @@@@@@@@@@
 
 #include <reg51.h>
 
-/* BYTE Register
+/* Special Function Register
 sfr P0   	= 0x80;
 sfr P1   	= 0x90;
 sfr P2   	= 0xA0;
@@ -56,7 +56,8 @@ sbit SPI_DIN  		= P1^3;
 sbit Serial_RxD0	= P3^7;						// sbit RD   	= 0xB7;			// RD
 sbit Serial_TxD0	= P3^6;						// sbit WR      = 0xB6;			// WR
 sbit 485Tx_ACP		= P3^5;						// sbit T1      = 0xB5;			// T1
-sbit INT1_Serial	= P3^3;						// sbit INT1    = 0xB3;			// INT0, UART 						
+sbit INT1_Serial	= P3^3;						// sbit INT1    = 0xB3;			// INT0, UART 
+						
 // UART
 sbit 485Tx_PC   	= P3^2;						// sbit INT0    = 0xB2;			// UART TXD
 sbit UART_TxD1 		= P3^1;						// sbit TXD     = 0xB1;			// UARD RXD
@@ -161,7 +162,7 @@ int 			ConvertedData
 
 
 // ***** Declare related to ACUD
-int 	ACUD_ID	
+int		ACUD_ID;
 
 
 
@@ -169,8 +170,34 @@ int 	ACUD_ID
 
 // @@@@@@@@@@ Program @@@@@@@@@@.
 
+	
+// ##### System Initialization
+void System_Init(){
+	
+	PCON=0x00;
+	SMOD=0;										// Baud rate selection
+	/* PCON: Power Control Register: 
+			 The PCON register is used for power control and double baud rate by set 1
+		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 |
+		| MOD  | RSV2 |	RSV1 | RSV0	| GF1  | GF0  |	PWDN | IDL  |
+	SMOD	The SMOD bit is used to decide the baud rate in serial port operating modes 1, 2 or 3.
+	RSV2	Reserve 
+	RSV2	Reserve 
+	RSV2	Reserve 
+	GF1		一般用途位元，可當一個位元變數使用。
+	GF0		一般用途位元，可當一個位元變數使用。
+	PWDN	省電模式，必須使用reset訊號讓其回復到一般操作模式。
+	IDL		IDL=1會使8051的clock停止，必須使用外部中斷或reset訊號使8051回復到一般操作模式。	
+	*/
+	
+	PC_UART_Init(22.1184,9600);
+	ACP_IOSerial_Init();
+	ADC_SPI_Init();
+	TIMER0_NmS_Init(20);						// Timer0 20ms 
+	ACUD_Init();
+	
+}
 
-// ##### Period 	
 /* Interrupt Vector(中斷向量)
 		| INT Number |  Description  |	Address |
 		|      0     | EXTERNAL INT0 |	 0003h  |   
@@ -179,6 +206,39 @@ int 	ACUD_ID
 		|	   3	 |TIMER/COUNTER 1|	 001Bh  |
 		|      4	 |  SERIAL PORT	 |   0023h  |
 		|      5	 |TIMER/COUNTER 2|	 002Bh  | */
+
+
+
+// ##### Period Timer	
+void TIMER0_NmS_Init(int N){					// N*mS timer
+
+	TMOD &= 0xF0;								// Clear Timer 0 
+	TMOD |= 0x01; 								// Mode 1, 16 bit timer/count mode	
+	TH0 = (65536-(N*1000/(Fosc*1000000/12)))/256;
+	TL0 = (65536-(N*1000/(Fosc*1000000/12))%256;	
+	TR0=1;;										// TCON.TR0=1, Timer 0 start running
+	/* TCON: Related to Timer:
+		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
+		| TF1  | TR1  | TF0  | TR0  |      |      |      |      |
+	TFx: Timer x OverFlow flag
+		0 = Timer has not overflowed/rolled over
+		1 = Timer has overflowed/rolled over	
+	TRx: Timer 1/0 run control
+		0 = Timer not running
+		1 = Timer running|
+	*/
+	/* TCON: Related to External Interrupt: 
+	
+		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
+		|      |      |      |      | IE1  | IT1  | IE0  | IT0  |
+	IEx: External Interrupt(Int 0X13) Flag
+		1 = Set by External Interrupt,when a high-to-low edge signal is received on port 3.3/3.2 (INT1/INT0)
+		0 = Clear when processor vectors to interrupt service routine at program address 0013h. 
+	ITx: External Interrupt Triger Control
+		0: Set by program to enable external interrupt 1 to be triggered by a low-level signal to generate an interrupt.
+		1: Set by program to enable external interrupt 1 to be triggered by a falling edge signal to generate an interrupt.
+	*/
+}
 	
 void IIMER0_NmS() interrupt 1 {					// Timer0 INT vector=000Bh
 	
@@ -210,7 +270,7 @@ void uS_Delay (int u){							// Delay us, 52us or 104us
 
 
 
-// ##### PC TxRx
+// ##### PC Communication
 void PC_UART_Init(float Fosc ,int Baudrate){	// Include T1 init
 	
 	/* Special Function Registers Related to UART: 
@@ -389,7 +449,7 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 
 
 
-// ##### ACP TxRx
+// ##### ACP Communication
 void ACP_IOSerial_Init(){
 	IOSerial_RBUF = 0;
 	IOSerial_TBUF = 0;
@@ -471,8 +531,6 @@ void ACP_IOSerial_Tx(){							// CACP_Out_Buf[] was set ready and call by ACP_Tx
 	Flag.IOSerial_Tx_Busy_Flg = 0;				
 	/* For ACP_Tx_Handler(), to allow transmit again over IOSerial */
 		
-
-	
 }
 
 void ACP_IOSerial_Rx() interrupt 2 {			// EX1 INT, vector=0013h, UART Simulator
@@ -534,7 +592,7 @@ void ACP_IOSerial_Rx() interrupt 2 {			// EX1 INT, vector=0013h, UART Simulator
 
 
 
-// ##### ADC AD7911
+// ##### Temperture Reading: ADC AD7911
 void ADC_SPI_Init(){
 /* ADC AD7911 
 // a minimum of 14 serial clock cycles, respectively, are needed 
@@ -601,74 +659,32 @@ float Rd_ADC( ){								// n=10 or 12, n bits convert resolution
 
 
 
-// ##### Timer
-void TIMER0_NmS_Init(int N){					// N*mS timer
-
-	TMOD &= 0xF0;								// Clear Timer 0 
-	TMOD |= 0x01; 								// Mode 1, 16 bit timer/count mode	
-	TH0 = (65536-(N*1000/(Fosc*1000000/12)))/256;
-	TL0 = (65536-(N*1000/(Fosc*1000000/12))%256;	
-	TR0=1;;										// TCON.TR0=1, Timer 0 start running
-	/* TCON: Related to Timer:
-		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
-		| TF1  | TR1  | TF0  | TR0  |      |      |      |      |
-	TFx: Timer x OverFlow flag
-		0 = Timer has not overflowed/rolled over
-		1 = Timer has overflowed/rolled over	
-	TRx: Timer 1/0 run control
-		0 = Timer not running
-		1 = Timer running|
-	*/
-	/* TCON: Related to External Interrupt: 
-	
-		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
-		|      |      |      |      | IE1  | IT1  | IE0  | IT0  |
-	IEx: External Interrupt(Int 0X13) Flag
-		1 = Set by External Interrupt,when a high-to-low edge signal is received on port 3.3/3.2 (INT1/INT0)
-		0 = Clear when processor vectors to interrupt service routine at program address 0013h. 
-	ITx: External Interrupt Triger Control
-		0: Set by program to enable external interrupt 1 to be triggered by a low-level signal to generate an interrupt.
-		1: Set by program to enable external interrupt 1 to be triggered by a falling edge signal to generate an interrupt.
-	*/
-}
-
-	
-
-// ##### Initialization
-void System_Init(){
-	
-	PCON=0x00;
-	SMOD=0;										// Baud rate selection
-	/* PCON: Power Control Register: 
-			 The PCON register is used for power control and double baud rate by set 1
-		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 |
-		| MOD  | RSV2 |	RSV1 | RSV0	| GF1  | GF0  |	PWDN | IDL  |
-	SMOD	The SMOD bit is used to decide the baud rate in serial port operating modes 1, 2 or 3.
-	RSV2	Reserve 
-	RSV2	Reserve 
-	RSV2	Reserve 
-	GF1		一般用途位元，可當一個位元變數使用。
-	GF0		一般用途位元，可當一個位元變數使用。
-	PWDN	省電模式，必須使用reset訊號讓其回復到一般操作模式。
-	IDL		IDL=1會使8051的clock停止，必須使用外部中斷或reset訊號使8051回復到一般操作模式。	
-	*/
-	
-	PC_UART_Init(22.1184,9600);
-	ACP_IOSerial_Init();
-	ADC_SPI_Init();
-	TIMER0_NmS_Init(20);						// Timer0 20ms 
-	ACUD_Init();
-	
-}
-
-
-
-// ##### System
+// ##### ACUD
 void ACUD_Init(){
+	
+	int HEX;
+	
 	P2=0xFF;
-	ACUD_ID = P2;								// Read DIP switch  status
+	HEX = P2;								// Reading DIP switch
 
+	ACUD_ID = H2D(HEX);	
+	
 }
+
+int H2D(int x){
+      int DEC, remainder, count = 0;
+      while(x > 0)
+      {
+            remainder = x % 10;
+            decimal_number = DEC + remainder * pow(16, count);
+            x = x / 10;
+            count++;
+      }
+      return DEC;
+}
+
+
+
 
 
 
@@ -724,41 +740,45 @@ Main(){
 /* PC Event manipulate */
 void PC_StateEvent(){
 
-	char 	*Command;
+	char 	Ack[5];							
+	/* Using array to reserve memory solidly, when implementing strcpy(), strcat() */
+	
 	int 	Resp;
 
-	while(Flag.PC_Rx_Ready_Flg){
+	if(Flag.PC_Rx_Ready_Flg){
 
-		switch(UART_In_Buf)
-			case: 
-				/* perform properly reaction */
-				
-				
-				
-				/* Reply acknowledge back to PC */
-				Command = A+"ACUD_ID"+"command string"+Enter
-				Resp = PC_Tx_Handler(&Command)
-				if (RES == 1)
-					
+
+		if ( Strcpm ( ACP_In_Buf,"command string") = 0) {
+		/* The content of ACP_In_Buf is not including "Enter" */
 			
-				break;
+			/* perform properly reaction */
+
+
+
+
+
+
+
+			/* Acknowledge back to PC */
+			strcopy(Ack,"A");
+			strcat(Ack,ACUD_ID);
+			strcat(Ack,"command string");
+			strcat(Ack,Enter);
 				
-			case: 
-				/* perform properly reaction */
-				
-				
-				break;
-				
-			case: 
-				/* perform properly reaction */
+			Resp = PC_Tx_Handler(&Ack)
+			if(Resp == 1){
+			/* anknowledge back to PC successful */
+				ACP_In_Buf[ACP_In_Buf_Max] = {0};	
+				Flag.PC_Rx_Ready_Flg = 0;
+			}		
+			else {
+			/* anknowledge back to PC failure */	
 			
-	
-				break;
-				
-		
-					
+				Flag.PC_Rx_Ready_Flg = 0;
+				/* Ignore this failure. assuming command will be resend again by PC site */
+			}
+		} 	
 	}
-	Flag.PC_Rx_Ready_Flg = 0
 }
 
 /* ACP Event manipulate */
