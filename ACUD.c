@@ -3,7 +3,7 @@
 // ACUD 
 // Auther: Duncan Tseng
 // Ver : W074  H1900
-// On going:
+// 
 
 
 // @@@@@@@@@@ Declare @@@@@@@@@@
