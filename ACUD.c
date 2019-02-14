@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W073  H2200
+// Ver : W074  H0930
 // On going:
 
 
@@ -98,7 +98,7 @@ union Bit_Field {								// all variables in union share same memory
 		unsigned UART_Tx_Busy_Flg 		: 1;				
 		unsigned PC_Rx_Ready_Flg 		: 1;
 		// relate to ACP
-		unsigned ACP_Tx_Busy_Flg 	: 1;		
+		unsigned ACP_Tx_Busy_Flg 		: 1;		
 		unsigned ACP_Rx_Ready_Flg 		: 1;		
 		// relate to ADC
 		unsigned Rd_ADC_Busy_Flg 		: 1;
@@ -132,50 +132,51 @@ char 	UART_Out_Buf[UART_Out_Buf_Max];
 
 
 /* Declare related to ACP */
-// Port 3: 
-sbit INT1_ACP		= P3^3;						// sbit INT1    = 0xB3;			// INT0, UART 
-sbit 485Tx_ACP		= P3^5;						// sbit T1      = 0xB5;			// T1
-sbit ACP_TxD0		= P3^6;						// sbit WR      = 0xB6;			// WR
-sbit ACP_RxD0		= P3^7;						// sbit RD   	= 0xB7;			// RD
 // related to Handler 
+#define ACP_In_Buf_Max 			5;				// ***** Need to be confirmed
+#define ACP_Out_Buf_Max			5;				// ***** Need to be confirmed
 int 	ACP_In_Buf_Index;
 int 	ACP_Out_Buf_Index;
 char 	ACP_In_Buf[ACP_In_Buf_Max];
 char 	ACP_Out_Buf[ACP_Out_Buf_Max];
-#define ACP_In_Buf_Max 			5;				// ***** Need to be confirmed
-#define ACP_Out_Buf_Max			5;				// ***** Need to be confirmed
-
+// Port 3: 
+sbit 	INT1_ACP		= P3^3;					// sbit INT1    = 0xB3;			// INT0, UART 
+sbit 	485Tx_ACP		= P3^5;					// sbit T1      = 0xB5;			// T1
+sbit 	ACP_TxD0		= P3^6;					// sbit WR      = 0xB6;			// WR
+sbit 	ACP_RxD0		= P3^7;					// sbit RD   	= 0xB7;			// RD
 
 
 /* Declare related to ADC */
-
 unsigned int   	ADC_ConvertedData				// 2 bytes
 int 			ConvertedData					 
-/* Port 1: */
+// Port 1: 
 // ADC: SPI(Serial Peripheral Interface) Simulator
-sbit ADC_DO			= P1^0;
-sbit ADC_CS   		= P1^1;
-sbit ADC_SCLK 		= P1^2;
-sbit ADC_DIN  		= P1^3;
+sbit 	ADC_DO			= P1^0;
+sbit 	ADC_CS   		= P1^1;
+sbit 	ADC_SCLK 		= P1^2;
+sbit 	ADC_DIN  		= P1^3;
 
 
 /* Declare related to ACUD */
 
-// Port 3: 
-sbit AIR_Heater		= P0^0;						// 
-sbit AIR_Cooler		= P0^1;						// 
-sbit Fan_L   		= P0^2;						// Fan speed 
-sbit Fan_M		    = P0^3;						// Fan speed 
-sbit Fan_H		    = P0^4;						// Fan speed 
-
+#define 	Checkout_Defa_Temp	26;				// Default temperature
+#define 	Checkin_Defa_Temp	23;
+#define 	Auto_Temperature	23;
+#define     Auto_Defa_Period	10;				// Default period
 int		ACUD_ID_Dec;
 int 	Temperature_Setting;
 int		Temperature_Reality;
 int		Checkout_Air_Period;					// 10-60min in an hour
+// Port 3: 
+sbit 	AIR_Heater		= P0^0;					// 
+sbit 	AIR_Cooler		= P0^1;					// 
+sbit 	Fan_L   		= P0^2;					// Fan speed 
+sbit 	Fan_M		    = P0^3;					// Fan speed 
+sbit 	Fan_H		    = P0^4;					// Fan speed 
 
 union Bit_Field {								// all variables in union share same memory
 	
-	unsigned ACUD;
+	unsigned Main;								// Main()
 	Struct {		// 注意: type 必須為整數(signed or unsigned皆可)
 		
 		unsigned Card_In_Flg 			: 1; 	// 1: card existing, 0: card dispear				
@@ -186,10 +187,9 @@ union Bit_Field {								// all variables in union share same memory
 	}
 };
 
-#define 	Checkout_Defa_Temp	26;				// Default temperature
-#define 	Checkin_Defa_Temp	23;
-#define 	Auto_Temperature	23;
-#define     Auto_Defa_Period	10;				// Default period
+
+
+
 
 
 
@@ -907,7 +907,7 @@ void Air_Manipulate(){
 	
 	
 Air_Control(){
-	if(ACUD.Air_Cool_Flg) {
+	if(Main.Air_Cool_Flg) {
 		AIR_Cooler = 1;							// Turn cooler on		
 		AIR_Heater = 0;							// Turn Herter off
 	}
@@ -915,7 +915,6 @@ Air_Control(){
 		AIR_Cooler = 0;							// Turn cooler off		
 		AIR_Heater = 1;							// Turn Herter on
 	}
-	
 }
 	
 	
