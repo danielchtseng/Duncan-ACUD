@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W074  H0930
+// Ver : W074  H1400
 // On going:
 
 
@@ -10,7 +10,7 @@
 
 #include <reg51.h>
 
-/* Special Function Register
+/* Special Function Register 
 sfr P0   	= 0x80;
 sfr P1   	= 0x90;
 sfr P2   	= 0xA0;
@@ -36,56 +36,49 @@ sfr SBUF 	= 0x99;
 
 /* SPF BIT */
 // PSW   
-sbit CY   	= 0xD7;
-sbit AC   	= 0xD6;
-sbit F0   	= 0xD5;
-sbit RS1  	= 0xD4;
-sbit RS0  	= 0xD3;
-sbit OV   	= 0xD2;
-sbit P    	= 0xD0;
+sbit 	CY   	= 0xD7;
+sbit 	AC   	= 0xD6;
+sbit 	F0   	= 0xD5;
+sbit 	RS1  	= 0xD4;
+sbit 	RS0  	= 0xD3;
+sbit 	OV   	= 0xD2;
+sbit 	P    	= 0xD0;
 
+// TCON 
+sbit 	TF1  	= 0x8F;
+sbit 	TR1  	= 0x8E;
+sbit 	TF0  	= 0x8D;
+sbit 	TR0  	= 0x8C;
+sbit 	IE1  	= 0x8B;
+sbit 	IT1  	= 0x8A;
+sbit 	IE0  	= 0x89;
+sbit 	IT0  	= 0x88;
 
-						
-/* UART */
-sbit 485Tx_PC   	= P3^2;						// sbit INT0    = 0xB2;			// UART TXD
-sbit UART_TxD1 		= P3^1;						// sbit TXD     = 0xB1;			// UARD RXD
-sbit UART_RxD1 		= P3^0;						// sbit RXD     = 0xB0;
+// SCON 
+sbit 	SM0  	= 0x9F;
+sbit 	SM1  	= 0x9E;
+sbit 	SM2  	= 0x9D;
+sbit 	REN  	= 0x9C;
+sbit 	TB8  	= 0x9B;
+sbit 	RB8  	= 0x9A;
+sbit 	TI   	= 0x99;
+sbit 	RI   	= 0x98;
 
-/* TCON */
-sbit TF1  	= 0x8F;
-sbit TR1  	= 0x8E;
-sbit TF0  	= 0x8D;
-sbit TR0  	= 0x8C;
-sbit IE1  	= 0x8B;
-sbit IT1  	= 0x8A;
-sbit IE0  	= 0x89;
-sbit IT0  	= 0x88;
+// IP  
+sbit 	PS   	= 0xBC;							// sbit PS  = 0xB8^4
+sbit 	PT1  	= 0xBB;							// sbit PT1 = 0xB8^3
+sbit 	PX1  	= 0xBA;							// sbit PX1 = 0xB8^2
+sbit 	PT0  	= 0xB9;							// sbit PT0 = 0xB8^1
+sbit 	PX0  	= 0xB8;							// sbit PX0 = 0xB8^0
 
-/* SCON */ 
-sbit SM0  	= 0x9F;
-sbit SM1  	= 0x9E;
-sbit SM2  	= 0x9D;
-sbit REN  	= 0x9C;
-sbit TB8  	= 0x9B;
-sbit RB8  	= 0x9A;
-sbit TI   	= 0x99;
-sbit RI   	= 0x98;
+// IE  
+sbit 	EA   	= 0xAF;							// sbit EA  = 0xA8^7
+sbit 	ES   	= 0xAC;							// sbit ES  = 0xA8^4
+sbit 	ET1  	= 0xAB;							// sbit ET1 = 0xA8^3
+sbit 	EX1  	= 0xAA;							// sbit EX1 = 0xA8^2
+sbit 	ET0  	= 0xA9;							// sbit ET0 = 0xA8^1
+sbit 	EX0  	= 0xA8;							// sbit EX0 = 0xA8^0
 
-/* IP  */ 
-sbit PS   	= 0xBC;								// sbit PS  = 0xB8^4
-sbit PT1  	= 0xBB;								// sbit PT1 = 0xB8^3
-sbit PX1  	= 0xBA;								// sbit PX1 = 0xB8^2
-sbit PT0  	= 0xB9;								// sbit PT0 = 0xB8^1
-sbit PX0  	= 0xB8;								// sbit PX0 = 0xB8^0
-
-/* IE  */
-sbit EA   	= 0xAF;								// sbit EA  = 0xA8^7
-sbit ES   	= 0xAC;								// sbit ES  = 0xA8^4
-sbit ET1  	= 0xAB;								// sbit ET1 = 0xA8^3
-sbit EX1  	= 0xAA;								// sbit EX1 = 0xA8^2
-sbit ET0  	= 0xA9;								// sbit ET0 = 0xA8^1
-sbit EX0  	= 0xA8;								// sbit EX0 = 0xA8^0
-*/
 
 
 
@@ -93,13 +86,17 @@ sbit EX0  	= 0xA8;								// sbit EX0 = 0xA8^0
 union Bit_Field {								// all variables in union share same memory
 	
 	unsigned Comm;
-	Struct {		// 注意: type 必須為整數(signed or unsigned皆可)
+	Struct {		
+	/* 注意: type 必須為整數(signed or unsigned皆可) */
+	
 		// relate to PC
 		unsigned UART_Tx_Busy_Flg 		: 1;				
 		unsigned PC_Rx_Ready_Flg 		: 1;
+		
 		// relate to ACP
 		unsigned ACP_Tx_Busy_Flg 		: 1;		
-		unsigned ACP_Rx_Ready_Flg 		: 1;		
+		unsigned ACP_Rx_Ready_Flg 		: 1;	
+		
 		// relate to ADC
 		unsigned Rd_ADC_Busy_Flg 		: 1;
 	}
@@ -124,11 +121,15 @@ union Bit_Field {								// all variables in union share same memory
 #define UART_In_Buf_Max 		5;				// ***** Need to be confirmed
 #define UART_Out_Buf_Max		5;				// ***** Need to be confirmed
 #define Enter					0x13;			// ASCII 13: carry Return
+
 int 	UART_In_Buf_Index;
 int 	UART_Out_buf_Index;
 char 	UART_In_Buf[UART_In_Buf_Max];
 char 	UART_Out_Buf[UART_Out_Buf_Max];
 
+sbit 	PC_485Tx   		= P3^2;					// sbit INT0    = 0xB2;			// UART TXD
+sbit 	UART_TxD1 		= P3^1;					// sbit TXD     = 0xB1;			// UARD RXD
+sbit 	UART_RxD1 		= P3^0;					// sbit RXD     = 0xB0;
 
 
 /* Declare related to ACP */
@@ -140,8 +141,8 @@ int 	ACP_Out_Buf_Index;
 char 	ACP_In_Buf[ACP_In_Buf_Max];
 char 	ACP_Out_Buf[ACP_Out_Buf_Max];
 // Port 3: 
-sbit 	INT1_ACP		= P3^3;					// sbit INT1    = 0xB3;			// INT0, UART 
-sbit 	485Tx_ACP		= P3^5;					// sbit T1      = 0xB5;			// T1
+sbit 	ACP_INT1		= P3^3;					// sbit INT1    = 0xB3;			// INT0, UART 
+sbit 	ACP_485Tx		= P3^5;					// sbit T1      = 0xB5;			// T1
 sbit 	ACP_TxD0		= P3^6;					// sbit WR      = 0xB6;			// WR
 sbit 	ACP_RxD0		= P3^7;					// sbit RD   	= 0xB7;			// RD
 
@@ -159,10 +160,10 @@ sbit 	ADC_DIN  		= P1^3;
 
 /* Declare related to ACUD */
 
-#define 	Checkout_Defa_Temp	26;				// Default temperature
-#define 	Checkin_Defa_Temp	23;
-#define 	Auto_Temperature	23;
-#define     Auto_Defa_Period	10;				// Default period
+#define Checkout_Defa_Temp	26;					// Default temperature
+#define Checkin_Defa_Temp	23;
+#define Auto_Temperature	23;
+#define Auto_Defa_Period	10;					// Default period
 int		ACUD_ID_Dec;
 int 	Temperature_Setting;
 int		Temperature_Reality;
@@ -397,7 +398,7 @@ void PC_UART_Init(float Fosc ,int Baudrate){	// Include T1 init
 	UART_In_Buf_Index = 0;
 	UART_Out_Buf_Index = 0;
 	
-	485Tx_PC = 0;								// RS485 Tx disable (= Rx enable)
+	PC_485Tx = 0;								// RS485 Tx disable (= Rx enable)
 
 }
 
@@ -426,7 +427,6 @@ int PC_Tx_Handler(int *Tx_Data_Ptr){
 	else {
 		
 		return 0;								// data transmit deny
-
 	}
 }
 
@@ -458,13 +458,13 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 		if ((SBUF != Enter)) {					
 		/* "Enter" emerged */
 		
-			485Tx_PC = 1; 						// Enable RS485 Tx 
+			PC_485Tx = 1; 						// Enable RS485 Tx 
 			UART_Out_Buf_Index++;
 		}			
 		else {									// UART Tx completed, UART_Outbuf_Index >= UART_Outbuf_Max 
 			UART_Out_Buf_Index=0;				// Reset UART_Out_Buf_Index
 			Comm.UART_Tx_Busy_Flg = 0;			// Clear UART Tx busy
-			485Tx_PC = 0; 						// Disable RS485 Tx ( =Rx enable)
+			PC_485Tx = 0; 						// Disable RS485 Tx ( =Rx enable)
 		}
 		TI = 0;									// SCON.TI=0, UART_Tx ready to sent 
 	}
@@ -481,10 +481,10 @@ void ACP_Init(){
 	ACP_In_Buf_Index = 0;	
 	ACP_Out_Buf_Index = 0;
 	
-	485Tx_ACP = 0;								// RS485 Tx disable	(= Rx enable)
+	ACP_485Tx = 0;								// RS485 Tx disable	(= Rx enable)
 	
-	IT1 = 1;									// EX1 will be triggered by a high-to-low edge(Falling) signal is received
-												// Ex1 is enabled in main()
+	IT1 = 1;									// Setting a high-to-low edge(Falling) signal method to triger EX1 interrupt.
+	/* EX1 will be enabled in main() */
 }
 
 int ACP_Tx_Handler(int *Tx_Data_Ptr){
@@ -492,14 +492,14 @@ int ACP_Tx_Handler(int *Tx_Data_Ptr){
 	
 	// sbit ACP_RxD0 	= P3^7;					// RD
 	// sbit ACP_TxD0	= P3^6;					// WR
-	// sbit 485Tx_ACP   = P3^5;					// T1
-	// sbit INT1_ACP 	= P3^3;					// INT1, connect to pin RxD0
+	// sbit ACP_485Tx   = P3^5;					// T1
+	// sbit ACP_INT1 	= P3^3;					// INT1, connect to pin RxD0
 	
 	int i = 0;
 	char ACP_TBUF;
 	
-	if(!(Comm.ACP_Tx_Busy_Flg)){			// IOSerial Tx avilable
-		Comm.ACP_Tx_Busy_Flg = 1; 			// clear by ACP_Tx()
+	if(!(Comm.ACP_Tx_Busy_Flg)){				// IOSerial Tx avilable
+		Comm.ACP_Tx_Busy_Flg = 1; 				// clear by ACP_Tx()
 		
 		ACP_TBUF=*Tx_Data_Ptr;
 		while(ACP_TBUF != Enter) {
@@ -510,7 +510,7 @@ int ACP_Tx_Handler(int *Tx_Data_Ptr){
 		ACP_Out_Buf[i]=*Tx_Data_Ptr;			// Put "Enter" into ACP_Out_Buf[]
 		
 		ACP_Out_Buf_Index = 0;					// Initial UART_Out_Buf_Index
-		ACP_Tx();						// Call ACP_Tx() to transmit data via ACP
+		ACP_Tx();								// Call ACP_Tx() to transmit data via ACP
 		
 		return 1;								// data transmit permit
 	}
@@ -521,7 +521,7 @@ int ACP_Tx_Handler(int *Tx_Data_Ptr){
 	}
 }
 
-void ACP_Tx(){							// CACP_Out_Buf[] was set ready and call by ACP_Tx_Handler(), 
+void ACP_Tx(){									// CACP_Out_Buf[] was set ready and call by ACP_Tx_Handler(), 
 	
 	int i = 0;
 
@@ -532,19 +532,19 @@ void ACP_Tx(){							// CACP_Out_Buf[] was set ready and call by ACP_Tx_Handler(
 		EA = 0;									// Suspending all interrupt happen 
 		/* Interrupt disable for 1 byte period only */
 										
-		485Tx_ACP = 1;							// RS485 Tx enable (= Rx disable)
-		ACP_TxD0 = 0;						// sent Start bit "0" on P3.6(WR)
+		ACP_485Tx = 1;							// RS485 Tx enable (= Rx disable)
+		ACP_TxD0 = 0;							// sent Start bit "0" on P3.6(WR)
 		uS_Delay(104);
 		for (i=0;i<8; i++) {
 			if (ACP_TBUF & 0x80) {
-				ACP_TxD0 = 1;				// sent out "1"
+				ACP_TxD0 = 1;					// sent out "1"
 			}else {
-				ACP_TxD0 = 0;				// Sent out "0"
+				ACP_TxD0 = 0;					// Sent out "0"
 			}
-			ACP_TBUF <<= 1; 				// ACP_TBUF left shift 1 bit 
+			ACP_TBUF <<= 1; 					// ACP_TBUF left shift 1 bit 
 			uS_Delay(104);
 		}
-		ACP_TxD0 = 1;						// sent Stop bit "1" on P3.6(WR)
+		ACP_TxD0 = 1;							// sent Stop bit "1" on P3.6(WR)
 		uS_Delay(104);	
 		
 		ACP_Out_Buf_Index++
@@ -552,21 +552,22 @@ void ACP_Tx(){							// CACP_Out_Buf[] was set ready and call by ACP_Tx_Handler(
 		
 		EA = 1;									// Resume all interrupt
 	}
-	485Tx_ACP = 0;
+	ACP_485Tx = 0;
 	Comm.ACP_Tx_Busy_Flg = 0;				
 	/* For ACP_Tx_Handler(), to allow transmit again over IOSerial */
 		
 }
 
-void ACP_Rx() interrupt 2 {			// EX1 INT, vector=0013h, UART Simulator
+void ACP_Rx() interrupt 2 {			
+/* EX1 INT, vector=0013h, UART Simulator */
 	
 	char ACP_RBUF;
 	
 	// Tx no need to using interrupt. 
 	// sbit ACP_RxD0 	= P3^7;					// RD
 	// sbit ACP_TxD0	= P3^6;					// WR
-	// sbit 485Tx_ACP   = P3^5;					// T1
-	// sbit INT1_ACP 	= P3^3;					// INT1, connect to pin RxD0
+	// sbit ACP_485Tx   = P3^5;					// T1
+	// sbit ACP_INT1 	= P3^3;					// INT1, connect to pin RxD0
 	
 	EA = 0; 									// Suspending all interrupt happen 
 	// EX = 0; 		
@@ -779,13 +780,13 @@ void PC_StateEvent(){
 		/* The content of ACP_In_Buf is not including "Enter" */
 			
 			/* perform properly reaction */
-
-
-
-
-
-
-
+			
+			
+			
+			
+			
+			
+			
 			/* Acknowledge back to PC */
 			strcopy(Ack,"A");
 			strcat(Ack,ACUD_ID_Dec);
