@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W074  H1900
+// Ver : W074  H2100
 // 
 
 
@@ -168,12 +168,15 @@ int		ACUD_ID_Dec;
 int 	Temperature_Setting;
 int		Temperature_Reality;
 int		Checkout_Air_Period;					// 10-60min in an hour
+int     Fan_Speed;								//0:L, 1:M,  2:H
+
 // Port 3: 
-sbit 	AIR_Heater		= P0^0;					// 
-sbit 	AIR_Cooler		= P0^1;					// 
+sbit 	Fan_H		    = P0^0;					// Fan speed 
+sbit 	Fan_M		    = P0^1;					// Fan speed 
 sbit 	Fan_L   		= P0^2;					// Fan speed 
-sbit 	Fan_M		    = P0^3;					// Fan speed 
-sbit 	Fan_H		    = P0^4;					// Fan speed 
+sbit 	AIR_Cooler		= P0^3;					// 
+sbit 	AIR_Heater		= P0^4;					// 
+sbit 	Card_Det	    = P0^5;					// Card detection
 
 union Bit_Field {								// all variables in union share same memory
 	
@@ -674,7 +677,7 @@ float Rd_ADC( ){								// n=10 or 12, n bits convert resolution
 			}else {
 				ConvertedVolt &= 0xFFFE;   		// set LSB = 0
 			}
-			ADC_Data <<= 1 ;
+			ADC_Data <<= 1 ;					// Left shift
 		}
 	
 		ConvertedVolt = ConvertedVolt * 5 / (2 ^ 10 - 1);
@@ -854,10 +857,10 @@ void ACP_StateEvent(){
 /* Aircondition manipulate */
 void Air_Manipulate(){
 	
-	Card_In_Flg = Card_In_Dectect()
-	ACUD_ID_Dec = Card_In_Detect();
-	Temperature_Reality = Tempeture_Reality_Detect();					// depend on the command in Temo_Status 
-	
+	Card_Det = 1;
+	Card_In_Flg = Card_Det;
+	Temperature_Reality = Rd_ADC();					// depend on the command in Temo_Status 
+	/* this could be considered to be implemented in 1 second timer */
 	 
 	if(Card_In_Flg){
 	/* Card present */	
@@ -885,7 +888,9 @@ void Air_Manipulate(){
 			
 			AIR_Cooler = 0;							// Turn cooler off		
 			AIR_Heater = 0; 						// Turn Herter off
-			
+			Fan_L = 0;								 
+			Fan_M = 0;								
+			Fan_H = 0;	
 			} 
 			else {
 				timer = 0;
@@ -901,12 +906,13 @@ void Air_Manipulate(){
 	
 	
 	
-Air_Anto_Control(){
+Air_Auto_Control(){
 
 int Temperature_delta
 
 	Temperature_delta = Temperature_Setting-Temperature_Reality;
-
+	/* this could be considered to be implemented in 1 second timer */
+	
 	/*
 	// P0^2: Fan speed Low 
 	// P0^3: Fan speed Middle
@@ -934,7 +940,7 @@ int Temperature_delta
 		Fan_M = 0;								
 		Fan_H = 0;	
 	}
-	else if( Temperature_delta < 1 && Temperature_delta > -1 ) {
+	else if( Temperature_delta < 0.25 && Temperature_delta > -0.25 ) {
 		AIR_Cooler = 0;							// Turn cooler on		
 		AIR_Heater = 0;							// Turn Herter off
 		Fan_L = 1;								
@@ -956,8 +962,8 @@ int Temperature_delta
 		Fan_H = 0;	
 	}
 	else if(Temperature_delta < -3 ) {
-		AIR_Cooler = 0;							// Turn cooler on		
-		AIR_Heater = 1;							// Turn Herter off
+		AIR_Cooler = 0;							// Turn cooler off		
+		AIR_Heater = 1;							// Turn Herter on
 		Fan_L = 0;								
 		Fan_M = 0;								
 		Fan_H = 1;	
@@ -966,18 +972,56 @@ int Temperature_delta
 
 Air_Menual_Control(){
 	
-	
-	
-	
-	
-	
-	
-	
-	
+	if Air_Cool_Flg ) {
+	/* Cooler */
+		AIR_Heater = 0;							// Turn Herter off
+		if( Temperature_Reality > Temperature_Setting ){
+			AIR_Cooler = 1;							// Turn cooler on			
+		}
+		else {
+			AIR_Cooler = 0;							// Turn cooler off		
+		}
+		switch(Fan_Speed)
+			case 0:
+				Fan_L = 1;								
+				Fan_M = 0;								
+				Fan_H = 0;
+			case 1:
+				Fan_L = 0;								
+				Fan_M = 1;								
+				Fan_H = 0;
+			case 2:
+				Fan_L = 0;								
+				Fan_M = 0;								
+				Fan_H = 1;
+			break;
+	}	
+	else {
+	/* Heater */	
+		AIR_Cooler = 0;							// Turn cooler off		
+		if( Temperature_Reality > Temperature_Setting ){
+			AIR_Heater = 0;							// Turn Herter off
+		}
+		else {
+			AIR_Heater = 1;							// Turn Herter off
+		}
+
+		switch(Fan_Speed)
+			case 0:
+				Fan_L = 1;								
+				Fan_M = 0;								
+				Fan_H = 0;
+			case 1:
+				Fan_L = 0;								
+				Fan_M = 1;								
+				Fan_H = 0;
+			case 2:
+				Fan_L = 0;								
+				Fan_M = 0;								
+				Fan_H = 1;
+			break;
+	}
+
 }
-
-
-
-
 
 
