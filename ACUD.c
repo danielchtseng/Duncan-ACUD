@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W074  H1630
+// Ver : W074  H1900
 // On going:
 
 
