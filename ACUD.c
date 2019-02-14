@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W074  H1400
+// Ver : W074  H1630
 // On going:
 
 
@@ -854,25 +854,23 @@ void ACP_StateEvent(){
 /* Aircondition manipulate */
 void Air_Manipulate(){
 	
-	Card_In_Detect()
-	Tempeture_Reality_Detect();					// depend on the command in Temo_Status 
+	Card_In_Flg = Card_In_Dectect()
+	ACUD_ID_Dec = Card_In_Detect();
+	Temperature_Reality = Tempeture_Reality_Detect();					// depend on the command in Temo_Status 
 	
-	
-	
+	 
 	if(Card_In_Flg){
 	/* Card present */	
 		
 		if(Air_Auto_Flg){
 		/* Performing Auto Mode */
-			Air_Control();
-			Fan_Anto_Control();
-	
+			Air_Auto_Control();
 	
 		}
 		else {
-		/* Performing Menu Mode */
-			Air_Control();
-			Fan_Menu_Control();
+		/* Performing Manual Mode */
+			Air_Manual_Control();
+
 		}
 	}
 	else {	
@@ -880,8 +878,8 @@ void Air_Manipulate(){
 	
 		if( timer < Checkout_Air_Period) {
 	
-			Air_Control();
-			Fan_Anto_Control();
+			Air_Auto_Control();
+
 		} 
 		else if {timer<60){
 			
@@ -903,30 +901,77 @@ void Air_Manipulate(){
 	
 	
 	
+Air_Anto_Control(){
+
+int Temperature_delta
+
+	Temperature_delta = Temperature_Setting-Temperature_Reality;
+
+	/*
+	// P0^2: Fan speed Low 
+	// P0^3: Fan speed Middle
+	// P0^4: Fan speed High 
+	*/
 	
-	
-	
-	
-Air_Control(){
-	if(Main.Air_Cool_Flg) {
+	if(Temperature_delta > 3) {
 		AIR_Cooler = 1;							// Turn cooler on		
 		AIR_Heater = 0;							// Turn Herter off
+		Fan_L = 0;								 
+		Fan_M = 0;								
+		Fan_H = 1;								 
 	}
-	else {
-		AIR_Cooler = 0;							// Turn cooler off		
-		AIR_Heater = 1;							// Turn Herter on
+	else if(Temperature_delta > 2) {
+		AIR_Cooler = 1;							// Turn cooler on		
+		AIR_Heater = 0;							// Turn Herter off
+		Fan_L = 0;								
+		Fan_M = 1;								
+		Fan_H = 0;
+	}
+	else if(Temperature_delta > 1) {
+		AIR_Cooler = 1;							// Turn cooler on		
+		AIR_Heater = 0;							// Turn Herter off
+		Fan_L = 1;								
+		Fan_M = 0;								
+		Fan_H = 0;	
+	}
+	else if( Temperature_delta < 1 && Temperature_delta > -1 ) {
+		AIR_Cooler = 0;							// Turn cooler on		
+		AIR_Heater = 0;							// Turn Herter off
+		Fan_L = 1;								
+		Fan_M = 0;								
+		Fan_H = 0;	
+	}
+	else if(Temperature_delta < -1 ) {
+		AIR_Cooler = 0;							// Turn cooler on		
+		AIR_Heater = 1;							// Turn Herter off
+		Fan_L = 1;								
+		Fan_M = 0;								
+		Fan_H = 0;	
+	}
+	else if(Temperature_delta < -2 ) {
+		AIR_Cooler = 0;							// Turn cooler on		
+		AIR_Heater = 1;							// Turn Herter off
+		Fan_L = 0;								
+		Fan_M = 1;								
+		Fan_H = 0;	
+	}
+	else if(Temperature_delta < -3 ) {
+		AIR_Cooler = 0;							// Turn cooler on		
+		AIR_Heater = 1;							// Turn Herter off
+		Fan_L = 0;								
+		Fan_M = 0;								
+		Fan_H = 1;	
 	}
 }
+
+Air_Menual_Control(){
 	
 	
-Fan_Anto_Control(){
-
-
-
-
-}
-
-Fan_Menu_Control(){
+	
+	
+	
+	
+	
 	
 	
 }
