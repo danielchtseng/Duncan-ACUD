@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W075  H1100
+// Ver : W075  H1200
 // 
 
 
@@ -90,12 +90,12 @@ union Bit_Field {								// all variables in union share same memory
 	/* 注意: type 必須為整數(signed or unsigned皆可) */
 	
 		// relate to PC
-		unsigned UART_Tx_Busy_Flg 		: 1;				
+		unsigned UART_Tx_Busy_Flg 	: 1;				
 		unsigned PC_Rx_Ready_Flg 		: 1;
 		
 		// relate to ACP
 		unsigned ACP_Tx_Busy_Flg 		: 1;		
-		unsigned ACP_Rx_Ready_Flg 		: 1;	
+		unsigned ACP_Rx_Ready_Flg 	: 1;	
 		
 		// relate to ADC
 		unsigned ADC_Rd_Busy_Flg 		: 1;
@@ -834,7 +834,7 @@ void ACP_StateEvent(){
 				/* perform properly reaction */
 			
 			
-				bread;
+				break;
 				
 			case: 
 				/* perform properly reaction */
