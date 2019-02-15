@@ -2,7 +2,9 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W075  H1200
+
+// Ver : W075  H1600
+
 // 
 
 
@@ -11,27 +13,27 @@
 #include <reg51.h>
 
 /* Special Function Register 
-sfr P0   	= 0x80;
-sfr P1   	= 0x90;
-sfr P2   	= 0xA0;
-sfr P3   	= 0xB0;
-sfr PSW  	= 0xD0;
-sfr ACC  	= 0xE0;
-sfr B    	= 0xF0;
-sfr SP   	= 0x81;
-sfr DPL  	= 0x82;
-sfr DPH  	= 0x83;
-sfr PCON 	= 0x87;
-sfr TCON 	= 0x88;
-sfr TMOD 	= 0x89;
-sfr TL0  	= 0x8A;
-sfr TL1  	= 0x8B;
-sfr TH0  	= 0x8C;
-sfr TH1  	= 0x8D;
-sfr IE   	= 0xA8;
-sfr IP   	= 0xB8;
-sfr SCON 	= 0x98;
-sfr SBUF 	= 0x99;
+sfr 	P0   	= 0x80;
+sfr 	P1   	= 0x90;
+sfr 	P2   	= 0xA0;
+sfr 	P3   	= 0xB0;
+sfr 	PSW  	= 0xD0;
+sfr 	ACC  	= 0xE0;
+sfr 	B    	= 0xF0;
+sfr 	SP   	= 0x81;
+sfr 	DPL  	= 0x82;
+sfr 	DPH  	= 0x83;
+sfr 	PCON 	= 0x87;
+sfr 	TCON 	= 0x88;
+sfr 	TMOD 	= 0x89;
+sfr 	TL0  	= 0x8A;
+sfr 	TL1  	= 0x8B;
+sfr 	TH0  	= 0x8C;
+sfr 	TH1  	= 0x8D;
+sfr 	IE   	= 0xA8;
+sfr 	IP   	= 0xB8;
+sfr 	SCON 	= 0x98;
+sfr 	SBUF 	= 0x99;
 */
 
 /* SPF BIT */
@@ -80,24 +82,29 @@ sbit 	ET0  	= 0xA9;							// sbit ET0 = 0xA8^1
 sbit 	EX0  	= 0xA8;							// sbit EX0 = 0xA8^0
 
 
+/* Declare related to Timer */
 
+unsigned int 	10mS_counter;					// 2 bytes: 0-65535
 
 /* Declare related to Communication */
-union Bit_Field {								// all variables in union share same memory
+union Bit_Field {						// all variables in union share same memory
+	/* Note: datatype must being "signed" or "unsigned" */
 	
 	unsigned Comm;
 	Struct {		
+
 	/* 注意: type 必須為整數(signed or unsigned皆可) */
 	
 		// relate to PC
 		unsigned UART_Tx_Busy_Flg 	: 1;				
+
 		unsigned PC_Rx_Ready_Flg 		: 1;
 		
-		// relate to ACP
+		/* relate to ACP */
 		unsigned ACP_Tx_Busy_Flg 		: 1;		
 		unsigned ACP_Rx_Ready_Flg 	: 1;	
 		
-		// relate to ADC
+		/* relate to ADC */
 		unsigned ADC_Rd_Busy_Flg 		: 1;
 	}
 };
@@ -110,7 +117,7 @@ union Bit_Field {								// all variables in union share same memory
 // For example
 //      struct {
 //			unsigned int age : 1;
-//		} Flag;   						*/
+//		} Flag Name;   						*/
 
 
 
@@ -141,10 +148,13 @@ int 	ACP_Out_Buf_Index;
 char 	ACP_In_Buf[ACP_In_Buf_Max];
 char 	ACP_Out_Buf[ACP_Out_Buf_Max];
 // Port 3: 
-sbit 	ACP_INT1		= P3^3;					// sbit INT1    = 0xB3;			// INT0, UART 
-sbit 	ACP_485Tx		= P3^5;					// sbit T1      = 0xB5;			// T1
-sbit 	ACP_TxD0		= P3^6;					// sbit WR      = 0xB6;			// WR
 sbit 	ACP_RxD0		= P3^7;					// sbit RD   	= 0xB7;			// RD
+sbit 	ACP_TxD0		= P3^6;					// sbit WR      = 0xB6;			// WR
+sbit 	ACP_485Tx		= P3^5;					// sbit T1      = 0xB5;			// T1
+sbit 	ACP_INT1		= P3^3;					// sbit INT1    = 0xB3;			// INT0, UART 
+
+
+
 
 
 /* Declare related to ADC */
@@ -152,10 +162,13 @@ unsigned int   	ADC_ConvertedData				// 2 bytes
 int 			ConvertedData					 
 // Port 1: 
 // ADC: SPI(Serial Peripheral Interface) Simulator
-sbit 	ADC_DO_PIN		= P1^0;
-sbit 	ADC_CS_PIN   	= P1^1;
-sbit 	ADC_SCLK_PIN 		= P1^2;
-sbit 	ADC_DIN_PIN  		= P1^3;
+sbit 	ADC_DIN_Pin  	= P1^3;
+sbit 	ADC_SCLK_Pin 	= P1^2;
+sbit 	ADC_CS_Pin   	= P1^1;
+sbit 	ADC_DO_Pin		= P1^0;
+
+
+
 
 
 /* Declare related to ACUD */
@@ -176,18 +189,20 @@ sbit 	Fan_M_Pin	 	= P0^1;					// Fan speed
 sbit 	Fan_L_Pin  		= P0^2;					// Fan speed 
 sbit 	Air_Cooler_Pin	= P0^3;					// 
 sbit 	Air_Heater_Pin	= P0^4;					// 
-sbit 	Card_Det_Pin    = P0^5;					// Card detection
+sbit 	Card_Det_Pin  	= P0^5;					// Card detection
 
 union Bit_Field {								// all variables in union share same memory
 	
 	unsigned Main;								// Main()
 	Struct {		// 注意: type 必須為整數(signed or unsigned皆可)
 		
-		unsigned Card_In_Flg 			: 1; 	// 1: card existing, 0: card dispear				
+		unsigned Card_Exist_Flg 		: 1; 	// 1: card existing, 0: card dispear				
 		unsigned Air_Cool_Flg			: 1; 	// 1: cool, 0: warm
 		unsigned Air_Auto_Flg 			: 1; 	// 1: Auto mode, decide by ACP	
-		unsigned  						: 1;		
-		unsigned  						: 1;
+		unsigned Card_Det_Flg 			: 1;	// Card detect request	
+		unsigned Temp_Rd_Flg			: 1;	// Temperautre reading request
+		unsigned WD_Rst_Flg				: 1;	// WatchDog reset request
+		unsigned 						: 1;
 	}
 };
 
@@ -219,10 +234,18 @@ void System_Init(){
 	IDL		IDL=1會使8051的clock停止，必須使用外部中斷或reset訊號使8051回復到一般操作模式。	
 	*/
 	
+	/* P0(AIR) In/Out initial */
+	
+	/* P1(ADC) In/Out initial */
+	
+	/* P2(ACUD_ID) In/Out initial */
+	
+	/* P3(ACP) In/Out initial */
+	
 	PC_UART_Init(22.1184,9600);
+	TIMER0_10mS_Init(10);						// Timer0 10ms 
 	ACP_Init();
 	ADC_Init();
-	TIMER0_NmS_Init(20);						// Timer0 20ms 
 	ACUD_Init();
 	
 }
@@ -268,19 +291,26 @@ void TIMER0_10mS_Init(int 10){					// 10*mS timer
 		0: Set by program to enable external interrupt 1 to be triggered by a low-level signal to generate an interrupt.
 		1: Set by program to enable external interrupt 1 to be triggered by a falling edge signal to generate an interrupt.
 	*/
+	10mS_Counter = 0;
 }
 	
-void IIMER0_10mS() interrupt 1 {					// Timer0 INT vector=000Bh
+void IIMER0_10mS() interrupt 1 {				// Timer0 INT vector=000Bh
 	
+	10mS_Counter++
 	
-	
-	
-	Card_In_Flg = Card_Det_Pin ;			    // Update Key status
-	Temperature_Reality = ADC_Rd();				// Update Temperture status
-	Watchdog();
+	if(10mS_Counter % 100 == 0){				// Determining each Second(10mS*100)
+
+		Main.Card_Det_Flg = 1;
+		Main.Temp_Rd_Flg = 1;
+		Main.WD_Res_Flg = 1;
+	}
+	if(10mS_Counter == 6000){					// 1 Minute
+		10mS_Counter= 0;						// Reset 10mS_Counter
+
+	}
 }
 
-void mS_Delay(int m){							// Delay ms 
+void mS_Delay(int mS){							// Delay ms 
 	
 	int i,j;									// 宣告整數變數i,j,N 
 	
@@ -292,7 +322,7 @@ void mS_Delay(int m){							// Delay ms
 	#endif
 }
 
-void uS_Delay (int u){							// Delay us, 52us or 104us
+void uS_Delay (int uS){							// Delay us, 52us or 104us
 
 
 
@@ -650,17 +680,17 @@ void ADC_Init(){
 // result with MSB provided first, followed by two trailing zeros.
 */
 	int i;
-	ADC_SCLK_PIN = 1;
-	ADC_CS_PIN = 1;
-	ADC_CS_PIN = 0;
+	ADC_SCLK_Pin = 1;
+	ADC_CS_Pin = 1;
+	ADC_CS_Pin = 0;
 
 	if (i=0;i<14;i++){							
 	/* Transmit 14(13-0) consecutive bit "0" */
-		ADC_DIN_PIN = 0;						// Set bit 11(CH Select) = 0	
-		ADC_SCLK_PIN = 0;
-		ADC_SCLK_PIN = 1	
+		ADC_DIN_Pin = 0;						// Set bit 11(CH Select) = 0	
+		ADC_SCLK_Pin = 0;
+		ADC_SCLK_Pin = 1	
 	}
-	ADC_CS_PIN = 1;
+	ADC_CS_Pin = 1;
 	Comm.ADC_Rd_Busy_Flg = 0;
 }
 
@@ -670,14 +700,14 @@ float ADC_Rd(){									// n=10 or 12, n bits convert resolution
 	
 	if (!(Comm.ADC_Rd_Busy_Flg)) {
 		Comm.ADC_Rd_Busy_Flg = 1;
-		ADC_DO_PIN = 1;
-		ADC_CS_PIN = 1;
-		ADC_SCLK_PIN = 0;
+		ADC_DO_Pin = 1;
+		ADC_CS_Pin = 1;
+		ADC_SCLK_Pin = 0;
 
 		if (i=0;i<14;i++){
-			ADC_SCLK_PIN = 1;
-			ADC_SCLK_PIN = 0;
-			if (ADC_DO_PIN){
+			ADC_SCLK_Pin = 1;
+			ADC_SCLK_Pin = 0;
+			if (ADC_DO_Pin){
 				ConvertedVolt |= 0x0001);		// set LSB = 1
 			}else {
 				ConvertedVolt &= 0xFFFE;   		// set LSB = 0
@@ -762,6 +792,19 @@ Main(){
 	EA=1;										// IE.EA,  Enable all interrupt							
 
 	while(1){
+	
+		if(Main.Card_Det_Flg){					// Set by IIMER0_10mS() interrupt 1
+			Main.Card_Det_Flg = 0;				// Clear flag
+			Main.Card_Exist_Flg = Card_Det_Pin ;// Reading Key exist status
+		}	
+		if(Main.Temp_Rd_Flg){					// Set by IIMER0_10mS() interrupt 1
+			Main.Temp_Rd_Flg = 0;				// Clear flag
+			Temperature_Reality = ADC_Rd();		// Implement ADC reading
+		}
+		if(Main.WD_Rst_Flg){					// Set by IIMER0_10mS() interrupt 1
+			Main.WD_Rst_Flg = 0					// Clear flag
+			Watchdog();							// Implement Reset watchdog
+		}
 	
 		PC_StateEvent();
 		ACP_StateEvent();
@@ -863,12 +906,12 @@ void ACP_StateEvent(){
 void Air_Manipulate(){
 	
 	
-	if(Card_In_Flg){
+	if(Card_Exist_Flg){
 	/* Card_In_Flg will be handled in IIMER0_NmS() interrupt 1 */
 	
 	/* Card present */	
 		
-		if(Air_Auto_Flg){
+		if(Main.Air_Auto_Flg){
 		/* Performing Auto Mode */
 			Air_Auto_Control();
 	
@@ -972,7 +1015,7 @@ float Temperature_delta
 
 Air_Menual_Control(){
 	
-	if Air_Cool_Flg ) {
+	if (Main.Air_Cool_Flg ) {
 	/* Cooler */
 		Air_Heater_Pin = 0;							// Turn Herter off
 		if( Temperature_Reality > Temperature_Setting ){
