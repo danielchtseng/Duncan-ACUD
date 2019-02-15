@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W074  H2100
+// Ver : W075  H1030
 // 
 
 
@@ -98,7 +98,7 @@ union Bit_Field {								// all variables in union share same memory
 		unsigned ACP_Rx_Ready_Flg 		: 1;	
 		
 		// relate to ADC
-		unsigned Rd_ADC_Busy_Flg 		: 1;
+		unsigned ADC_Rd_Busy_Flg 		: 1;
 	}
 };
 /* Bit Field: 是一種省空間的特殊 data member, 可以使用特定幾個 bit 來放 data.
@@ -152,10 +152,10 @@ unsigned int   	ADC_ConvertedData				// 2 bytes
 int 			ConvertedData					 
 // Port 1: 
 // ADC: SPI(Serial Peripheral Interface) Simulator
-sbit 	ADC_DO			= P1^0;
-sbit 	ADC_CS   		= P1^1;
-sbit 	ADC_SCLK 		= P1^2;
-sbit 	ADC_DIN  		= P1^3;
+sbit 	ADC_DO_PIN		= P1^0;
+sbit 	ADC_CS_PIN   	= P1^1;
+sbit 	ADC_SCLK_PIN 		= P1^2;
+sbit 	ADC_DIN_PIN  		= P1^3;
 
 
 /* Declare related to ACUD */
@@ -165,18 +165,18 @@ sbit 	ADC_DIN  		= P1^3;
 #define Auto_Temperature	23;
 #define Auto_Defa_Period	10;					// Default period
 int		ACUD_ID_Dec;
-int 	Temperature_Setting;
-int		Temperature_Reality;
+float 	Temperature_Setting;
+float	Temperature_Reality;
 int		Checkout_Air_Period;					// 10-60min in an hour
-int     Fan_Speed;								//0:L, 1:M,  2:H
+int     FAN_Speed;								//0:L, 1:M,  2:H
 
 // Port 3: 
-sbit 	Fan_H		    = P0^0;					// Fan speed 
-sbit 	Fan_M		    = P0^1;					// Fan speed 
-sbit 	Fan_L   		= P0^2;					// Fan speed 
-sbit 	AIR_Cooler		= P0^3;					// 
-sbit 	AIR_Heater		= P0^4;					// 
-sbit 	Card_Det	    = P0^5;					// Card detection
+sbit 	Fan_H_Pin	    = P0^0;					// Fan speed 
+sbit 	Fan_M_Pin	 	= P0^1;					// Fan speed 
+sbit 	Fan_L_Pin  		= P0^2;					// Fan speed 
+sbit 	Air_Cooler_Pin	= P0^3;					// 
+sbit 	Air_Heater_Pin	= P0^4;					// 
+sbit 	Card_Det_Pin    = P0^5;					// Card detection
 
 union Bit_Field {								// all variables in union share same memory
 	
@@ -239,12 +239,13 @@ void System_Init(){
 
 
 // ##### Period Timer	
-void TIMER0_NmS_Init(int N){					// N*mS timer
+void TIMER0_10mS_Init(int 10){					// 10*mS timer
 
 	TMOD &= 0xF0;								// Clear Timer 0 
 	TMOD |= 0x01; 								// Mode 1, 16 bit timer/count mode	
 	TH0 = (65536-(N*1000/(Fosc*1000000/12)))/256;
-	TL0 = (65536-(N*1000/(Fosc*1000000/12))%256;	
+	TL0 = (65536-(N*1000/(Fosc*1000000/12))%256;
+	/* The content of TH0 & TL0 is designed to meet 1ms 
 	TR0=1;;										// TCON.TR0=1, Timer 0 start running
 	/* TCON: Related to Timer:
 		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
@@ -269,11 +270,14 @@ void TIMER0_NmS_Init(int N){					// N*mS timer
 	*/
 }
 	
-void IIMER0_NmS() interrupt 1 {					// Timer0 INT vector=000Bh
+void IIMER0_10mS() interrupt 1 {					// Timer0 INT vector=000Bh
 	
-	Key_Detect();								// Udate Key present status
-	ADC_Detect();								// Update Temperture status
 	
+	
+	
+	Card_In_Flg = Card_Det_Pin ;			    // Update Key status
+	Temperature_Reality = ADC_Rd();				// Update Temperture status
+	Watchdog();
 }
 
 void mS_Delay(int m){							// Delay ms 
@@ -646,33 +650,34 @@ void ADC_Init(){
 // result with MSB provided first, followed by two trailing zeros.
 */
 	int i;
-	ADC_SCLK = 1;
-	ADC_CS = 1;
-	ADC_CS = 0;
+	ADC_SCLK_PIN = 1;
+	ADC_CS_PIN = 1;
+	ADC_CS_PIN = 0;
 
-	if (i=0;i<14;i++){							// Transmit 14(13-0) bit
-		ADC_DIN = 0;							// bit 11 = 0, select CH = 0	
-		ADC_SCLK = 0;
-		ADC_SCLK = 1	
+	if (i=0;i<14;i++){							
+	/* Transmit 14(13-0) consecutive bit "0" */
+		ADC_DIN_PIN = 0;						// Set bit 11(CH Select) = 0	
+		ADC_SCLK_PIN = 0;
+		ADC_SCLK_PIN = 1	
 	}
-	ADC_CS = 1;
-	Comm.Rd_ADC_Busy_Flg = 0;
+	ADC_CS_PIN = 1;
+	Comm.ADC_Rd_Busy_Flg = 0;
 }
 
-float Rd_ADC( ){								// n=10 or 12, n bits convert resolution
+float ADC_Rd(){									// n=10 or 12, n bits convert resolution
 	int i;
 	float CovertedVolt = 0;
 	
-	if (!(Comm.Rd_ADC_Busy_Flg)) {
-		Comm.Rd_ADC_Busy_Flg = 1;
-		ADC_DO = 1;
-		ADC_CS = 1;
-		ADC_SCLK = 0;
+	if (!(Comm.ADC_Rd_Busy_Flg)) {
+		Comm.ADC_Rd_Busy_Flg = 1;
+		ADC_DO_PIN = 1;
+		ADC_CS_PIN = 1;
+		ADC_SCLK_PIN = 0;
 
 		if (i=0;i<14;i++){
-			ADC_SCLK = 1;
-			ADC_SCLK = 0;
-			if (ADC_DO){
+			ADC_SCLK_PIN = 1;
+			ADC_SCLK_PIN = 0;
+			if (ADC_DO_PIN){
 				ConvertedVolt |= 0x0001);		// set LSB = 1
 			}else {
 				ConvertedVolt &= 0xFFFE;   		// set LSB = 0
@@ -681,7 +686,7 @@ float Rd_ADC( ){								// n=10 or 12, n bits convert resolution
 		}
 	
 		ConvertedVolt = ConvertedVolt * 5 / (2 ^ 10 - 1);
-		Comm.Rd_ADC_Busy_Flg = 0;
+		Comm.ADC_Rd_Busy_Flg = 0;
 		return CovertedVolt;
 	}
 	else {
@@ -857,12 +862,10 @@ void ACP_StateEvent(){
 /* Aircondition manipulate */
 void Air_Manipulate(){
 	
-	Card_Det = 1;
-	Card_In_Flg = Card_Det;
-	Temperature_Reality = Rd_ADC();					// depend on the command in Temo_Status 
-	/* this could be considered to be implemented in 1 second timer */
-	 
+	
 	if(Card_In_Flg){
+	/* Card_In_Flg will be handled in IIMER0_NmS() interrupt 1 */
+	
 	/* Card present */	
 		
 		if(Air_Auto_Flg){
@@ -886,20 +889,17 @@ void Air_Manipulate(){
 		} 
 		else if {timer<60){
 			
-			AIR_Cooler = 0;							// Turn cooler off		
-			AIR_Heater = 0; 						// Turn Herter off
-			Fan_L = 0;								 
-			Fan_M = 0;								
-			Fan_H = 0;	
+			Air_Cooler_Pin = 0;							// Turn cooler off		
+			Air_Heater_Pin = 0; 						// Turn Herter off
+			Fan_L_Pin = 0;								 
+			Fan_M_Pin = 0;								
+			Fan_H_Pin = 0;	
 			} 
 			else {
 				timer = 0;
 			}
-			
 		}
 	}
-	
-	
 }	
 	
 	
@@ -908,65 +908,65 @@ void Air_Manipulate(){
 	
 Air_Auto_Control(){
 
-int Temperature_delta
+float Temperature_delta
 
 	Temperature_delta = Temperature_Setting-Temperature_Reality;
-	/* this could be considered to be implemented in 1 second timer */
-	
-	/*
-	// P0^2: Fan speed Low 
-	// P0^3: Fan speed Middle
-	// P0^4: Fan speed High 
+	/* Temperature_Reality will be updated by ADC_Rd() in IIMER0_NmS() interrupt 1
+	   Temperature_Setting will be updated by PC_StateEvent() and ACP_StateEvent()  
+	   
+	// P0^2: FAN speed Low 
+	// P0^3: FAN speed Middle
+	// P0^4: FAN speed High 
 	*/
 	
 	if(Temperature_delta > 3) {
-		AIR_Cooler = 1;							// Turn cooler on		
-		AIR_Heater = 0;							// Turn Herter off
-		Fan_L = 0;								 
-		Fan_M = 0;								
-		Fan_H = 1;								 
+		Air_Cooler_Pin = 1;							// Turn cooler on		
+		Air_Heater_Pin = 0;							// Turn Herter off
+		Fan_L_Pin = 0;								 
+		Fan_M_Pin = 0;								
+		Fan_H_Pin = 1;								 
 	}
 	else if(Temperature_delta > 2) {
-		AIR_Cooler = 1;							// Turn cooler on		
-		AIR_Heater = 0;							// Turn Herter off
-		Fan_L = 0;								
-		Fan_M = 1;								
-		Fan_H = 0;
+		Air_Cooler_Pin = 1;							// Turn cooler on		
+		Air_Heater_Pin = 0;							// Turn Herter off
+		Fan_L_Pin = 0;								
+		Fan_M_Pin = 1;								
+		Fan_H_Pin = 0;
 	}
 	else if(Temperature_delta > 1) {
-		AIR_Cooler = 1;							// Turn cooler on		
-		AIR_Heater = 0;							// Turn Herter off
-		Fan_L = 1;								
-		Fan_M = 0;								
-		Fan_H = 0;	
+		Air_Cooler_Pin = 1;							// Turn cooler on		
+		Air_Heater_Pin = 0;							// Turn Herter off
+		Fan_L_Pin = 1;								
+		Fan_M_Pin = 0;								
+		Fan_H_Pin = 0;	
 	}
 	else if( Temperature_delta < 0.25 && Temperature_delta > -0.25 ) {
-		AIR_Cooler = 0;							// Turn cooler on		
-		AIR_Heater = 0;							// Turn Herter off
-		Fan_L = 1;								
-		Fan_M = 0;								
-		Fan_H = 0;	
+		Air_Cooler_Pin = 0;							// Turn cooler on		
+		Air_Heater_Pin = 0;							// Turn Herter off
+		Fan_L_Pin = 1;								
+		Fan_M_Pin = 0;								
+		Fan_H_Pin = 0;	
 	}
 	else if(Temperature_delta < -1 ) {
-		AIR_Cooler = 0;							// Turn cooler on		
-		AIR_Heater = 1;							// Turn Herter off
-		Fan_L = 1;								
-		Fan_M = 0;								
-		Fan_H = 0;	
+		Air_Cooler_Pin = 0;							// Turn cooler on		
+		Air_Heater_Pin = 1;							// Turn Herter off
+		Fan_L_Pin = 1;								
+		Fan_M_Pin = 0;								
+		Fan_H_Pin = 0;	
 	}
 	else if(Temperature_delta < -2 ) {
-		AIR_Cooler = 0;							// Turn cooler on		
-		AIR_Heater = 1;							// Turn Herter off
-		Fan_L = 0;								
-		Fan_M = 1;								
-		Fan_H = 0;	
+		Air_Cooler_Pin = 0;							// Turn cooler on		
+		Air_Heater_Pin = 1;							// Turn Herter off
+		Fan_L_Pin = 0;								
+		Fan_M_Pin = 1;								
+		Fan_H_Pin = 0;	
 	}
 	else if(Temperature_delta < -3 ) {
-		AIR_Cooler = 0;							// Turn cooler off		
-		AIR_Heater = 1;							// Turn Herter on
-		Fan_L = 0;								
-		Fan_M = 0;								
-		Fan_H = 1;	
+		Air_Cooler_Pin = 0;							// Turn cooler off		
+		Air_Heater_Pin = 1;							// Turn Herter on
+		Fan_L_Pin = 0;								
+		Fan_M_Pin = 0;								
+		Fan_H_Pin = 1;	
 	}
 }
 
@@ -974,51 +974,51 @@ Air_Menual_Control(){
 	
 	if Air_Cool_Flg ) {
 	/* Cooler */
-		AIR_Heater = 0;							// Turn Herter off
+		Air_Heater_Pin = 0;							// Turn Herter off
 		if( Temperature_Reality > Temperature_Setting ){
-			AIR_Cooler = 1;							// Turn cooler on			
+			Air_Cooler_Pin = 1;							// Turn cooler on			
 		}
 		else {
-			AIR_Cooler = 0;							// Turn cooler off		
+			Air_Cooler_Pin = 0;							// Turn cooler off		
 		}
-		switch(Fan_Speed)
+		switch(FAN_Speed)
 			case 0:
-				Fan_L = 1;								
-				Fan_M = 0;								
-				Fan_H = 0;
+				Fan_L_Pin = 1;								
+				Fan_M_Pin = 0;								
+				Fan_H_Pin = 0;
 			case 1:
-				Fan_L = 0;								
-				Fan_M = 1;								
-				Fan_H = 0;
+				Fan_L_Pin = 0;								
+				Fan_M_Pin = 1;								
+				Fan_H_Pin = 0;
 			case 2:
-				Fan_L = 0;								
-				Fan_M = 0;								
-				Fan_H = 1;
+				Fan_L_Pin = 0;								
+				Fan_M_Pin = 0;								
+				Fan_H_Pin = 1;
 			break;
 	}	
 	else {
 	/* Heater */	
-		AIR_Cooler = 0;							// Turn cooler off		
+		Air_Cooler_Pin = 0;							// Turn cooler off		
 		if( Temperature_Reality > Temperature_Setting ){
-			AIR_Heater = 0;							// Turn Herter off
+			Air_Heater_Pin = 0;							// Turn Herter off
 		}
 		else {
-			AIR_Heater = 1;							// Turn Herter off
+			Air_Heater_Pin = 1;							// Turn Herter off
 		}
 
-		switch(Fan_Speed)
+		switch(FAN_Speed)
 			case 0:
-				Fan_L = 1;								
-				Fan_M = 0;								
-				Fan_H = 0;
+				Fan_L_Pin = 1;								
+				Fan_M_Pin = 0;								
+				Fan_H_Pin = 0;
 			case 1:
-				Fan_L = 0;								
-				Fan_M = 1;								
-				Fan_H = 0;
+				Fan_L_Pin = 0;								
+				Fan_M_Pin = 1;								
+				Fan_H_Pin = 0;
 			case 2:
-				Fan_L = 0;								
-				Fan_M = 0;								
-				Fan_H = 1;
+				Fan_L_Pin = 0;								
+				Fan_M_Pin = 0;								
+				Fan_H_Pin = 1;
 			break;
 	}
 
