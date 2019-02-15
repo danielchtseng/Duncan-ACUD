@@ -849,8 +849,8 @@ void ACP_StateEvent(){
 				bread;
 				
 		/* Reply acknowledge back to ACP */
-			Res = ACP_Tx_Handler(&Command, Len)
-			if (RES == 1)
+			Resp = ACP_Tx_Handler(&Command, Len)
+			if (Resp == 1)
 				Comm.ACP_Rx_Ready_Flg = 0
 	}
 }
