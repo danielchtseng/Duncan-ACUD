@@ -3,7 +3,7 @@
 // ACUD 
 // Auther: Duncan Tseng
 
-// Ver : W075  H1600
+// Ver : W077  H1700
 
 // 
 
@@ -98,14 +98,14 @@ union Bit_Field {						// all variables in union share same memory
 		// relate to PC
 		unsigned UART_Tx_Busy_Flg 	: 1;				
 
-		unsigned PC_Rx_Ready_Flg 		: 1;
+		unsigned PC_Rx_Ready_Flg 	: 1;
 		
 		/* relate to ACP */
-		unsigned ACP_Tx_Busy_Flg 		: 1;		
+		unsigned ACP_Tx_Busy_Flg 	: 1;		
 		unsigned ACP_Rx_Ready_Flg 	: 1;	
 		
 		/* relate to ADC */
-		unsigned ADC_Rd_Busy_Flg 		: 1;
+		unsigned ADC_Rd_Busy_Flg 	: 1;
 	}
 };
 /* Bit Field: 是一種省空間的特殊 data member, 可以使用特定幾個 bit 來放 data.
@@ -125,14 +125,14 @@ union Bit_Field {						// all variables in union share same memory
 /* Declare related to UART */
 #define Fosc					22.1184;		// ***** Need to be confirmed (0r 11.0592 )
 #define Baudrate				9600;			// ***** Need to be confirmed
-#define UART_In_Buf_Max 		5;				// ***** Need to be confirmed
-#define UART_Out_Buf_Max		5;				// ***** Need to be confirmed
+#define PC_In_Buf_Max 		5;				// ***** Need to be confirmed
+#define PC_Out_Buf_Max		5;				// ***** Need to be confirmed
 #define Enter					0x13;			// ASCII 13: carry Return
 
-int 	UART_In_Buf_Index;
-int 	UART_Out_buf_Index;
-char 	UART_In_Buf[UART_In_Buf_Max];
-char 	UART_Out_Buf[UART_Out_Buf_Max];
+int 	PC_In_Buf_Index;
+int 	PC_Out_buf_Index;
+char 	PC_In_Buf[PC_In_Buf_Max];
+char 	PC_Out_Buf[PC_Out_Buf_Max];
 
 sbit 	PC_485Tx   		= P3^2;					// sbit INT0    = 0xB2;			// UART TXD
 sbit 	UART_TxD1 		= P3^1;					// sbit TXD     = 0xB1;			// UARD RXD
@@ -262,7 +262,7 @@ void System_Init(){
 
 
 // ##### Period Timer	
-void TIMER0_10mS_Init(int 10){					// 10*mS timer
+void TIMER0_10mS_Init(int N){					// 10*mS timer
 
 	TMOD &= 0xF0;								// Clear Timer 0 
 	TMOD |= 0x01; 								// Mode 1, 16 bit timer/count mode	
@@ -294,15 +294,18 @@ void TIMER0_10mS_Init(int 10){					// 10*mS timer
 	10mS_Counter = 0;
 }
 	
-void IIMER0_10mS() interrupt 1 {				// Timer0 INT vector=000Bh
+void TIMER0_10mS() interrupt 1 {				// Timer0 INT vector=000Bh
 	
 	10mS_Counter++
-	
-	if(10mS_Counter % 100 == 0){				// Determining each Second(10mS*100)
 
+	
+	if(10mS_Counter % 10 == 0){					// 100mS(10mS*10) period
 		Main.Card_Det_Flg = 1;
+		Main.WD_Res_Flg = 1;		
+	}
+	if(10mS_Counter % 100 == 0){				// 1 Second(10mS*100) period
+
 		Main.Temp_Rd_Flg = 1;
-		Main.WD_Res_Flg = 1;
 	}
 	if(10mS_Counter == 6000){					// 1 Minute
 		10mS_Counter= 0;						// Reset 10mS_Counter
@@ -432,15 +435,14 @@ void PC_UART_Init(float Fosc ,int Baudrate){	// Include T1 init
 	
 	*/
 	
-	UART_In_Buf_Index = 0;
-	UART_Out_Buf_Index = 0;
-	
+	PC_In_Buf_Index = 0;
+	PC_Out_Buf_Index = 0;
 	PC_485Tx = 0;								// RS485 Tx disable (= Rx enable)
 
 }
 
-int PC_Tx_Handler(int *Tx_Data_Ptr){
-	/* data need to be ported to UART_Out_Buf[] before by way of UART */
+int PC_Tx_Handler(int *2PC_Data_Ptr){PC
+	/* This function in order to avoid the conflick cause by UART Tx jim */
 	
 	int i = 0;
 	char PC_TBUF;
@@ -448,15 +450,15 @@ int PC_Tx_Handler(int *Tx_Data_Ptr){
 	if(!(Comm.UART_Tx_Busy_Flg)){				// UART Tx avilable
 		Comm.UART_Tx_Busy_Flg = 1; 				// clear by PC_UART_RxTx() interrupt 4
 
-		PC_TBUF = *Tx_Data_Ptr;
+		PC_TBUF = *2PC_Data_Ptr;
 		while(PC_TBUF!= Enter){
-			UART_Out_Buf[i]=*Tx_Data_Ptr;
+			PC_Out_Buf[i]=*2PC_Data_Ptr;
 			i++;
-			Tx_Data_Ptr++;
+			2PC_Data_Ptr++;
 		}
-		UART_Out_Buf[i]=*Tx_Data_Ptr;			// Put "Enter" into UART_Out_Buf[]
+		PC_Out_Buf[i]=*2PC_Data_Ptr;			// Put "Enter" into PC_Out_Buf[]
 		
-		UART_Out_Buf_Index = 0;					// Initial UART_Out_Buf_Index
+		PC_Out_Buf_Index = 0;					// Initial PC_Out_Buf_Index
 		TI=1; 									// Triger UART_ISR() to start UART_Tx 
 		
 		return 1;								// data transmit permit
@@ -476,13 +478,13 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 		if (SBUF != Enter) {					
 		/* "Enter" emerged */
 		
-			UART_In_Buf[UART_In_Buf_Index] = SBUF;	
-			UART_In_Buf_Index++;
+			PC_In_Buf[PC_In_Buf_Index] = SBUF;	
+			PC_In_Buf_Index++;
 			RI = 0;								// SCON.RI=0, force UART_Rx ready to receive again
 		}
-		else {									// UART_In_Buf_Index >= UART_In_Buf_Max 
+		else {									// PC_In_Buf_Index >= PC_In_Buf_Max 
 
-			UART_In_Buf_Index = 0;				// Reset UART_In_Buf_Index
+			PC_In_Buf_Index = 0;				// Reset PC_In_Buf_Index
 			Comm.PC_Rx_Ready_Flg = 1; 			// For PC_StateEvent()
 		}
 	}
@@ -490,16 +492,16 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 	if ( TI ){    								// SCON.TI, TI=1 means previous content have been sent.   
 		
 		// Comm.UART_Tx_Busy_Flg had been set in PC_Tx_Handler()		
-		SBUF = UART_Out_Buf[UART_Out_Buf_Index];
+		SBUF = PC_Out_Buf[PC_Out_Buf_Index];
 		
 		if ((SBUF != Enter)) {					
 		/* "Enter" emerged */
 		
 			PC_485Tx = 1; 						// Enable RS485 Tx 
-			UART_Out_Buf_Index++;
+			PC_Out_Buf_Index++;
 		}			
 		else {									// UART Tx completed, UART_Outbuf_Index >= UART_Outbuf_Max 
-			UART_Out_Buf_Index=0;				// Reset UART_Out_Buf_Index
+			PC_Out_Buf_Index=0;				// Reset PC_Out_Buf_Index
 			Comm.UART_Tx_Busy_Flg = 0;			// Clear UART Tx busy
 			PC_485Tx = 0; 						// Disable RS485 Tx ( =Rx enable)
 		}
@@ -513,19 +515,17 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 
 // ##### ACP Communication
 void ACP_Init(){
-	ACP_RBUF = 0;
-	ACP_TBUF = 0;
+
 	ACP_In_Buf_Index = 0;	
 	ACP_Out_Buf_Index = 0;
-	
 	ACP_485Tx = 0;								// RS485 Tx disable	(= Rx enable)
 	
 	IT1 = 1;									// Setting a high-to-low edge(Falling) signal method to triger EX1 interrupt.
 	/* EX1 will be enabled in main() */
 }
 
-int ACP_Tx_Handler(int *Tx_Data_Ptr){
-	/* data need to be ported to UART_Out_Buf[] before by way of UART */
+int ACP_Tx_Handler(int *2ACP_Data_Ptr){
+	/* data need to be ported to PC_Out_Buf[] before by way of UART */
 	
 	// sbit ACP_RxD0 	= P3^7;					// RD
 	// sbit ACP_TxD0	= P3^6;					// WR
@@ -533,20 +533,20 @@ int ACP_Tx_Handler(int *Tx_Data_Ptr){
 	// sbit ACP_INT1 	= P3^3;					// INT1, connect to pin RxD0
 	
 	int i = 0;
-	char ACP_TBUF;
+	char ACP_T_TEMP;
 	
 	if(!(Comm.ACP_Tx_Busy_Flg)){				// IOSerial Tx avilable
 		Comm.ACP_Tx_Busy_Flg = 1; 				// clear by ACP_Tx()
 		
-		ACP_TBUF=*Tx_Data_Ptr;
-		while(ACP_TBUF != Enter) {
-			ACP_Out_Buf[i]=*Tx_Data_Ptr;
+		ACP_T_TEMP=*2ACP_Data_Ptr;
+		while(ACP_T_TEMP != Enter) {
+			ACP_Out_Buf[i]=*2ACP_Data_Ptr;
 			i++;
-			Tx_Data_Ptr++;
+			2ACP_Data_Ptr++;
 		}
-		ACP_Out_Buf[i]=*Tx_Data_Ptr;			// Put "Enter" into ACP_Out_Buf[]
+		ACP_Out_Buf[i]=*2ACP_Data_Ptr;			// Put "Enter" into ACP_Out_Buf[]
 		
-		ACP_Out_Buf_Index = 0;					// Initial UART_Out_Buf_Index
+		ACP_Out_Buf_Index = 0;					// Initial PC_Out_Buf_Index
 		ACP_Tx();								// Call ACP_Tx() to transmit data via ACP
 		
 		return 1;								// data transmit permit
@@ -560,11 +560,13 @@ int ACP_Tx_Handler(int *Tx_Data_Ptr){
 
 void ACP_Tx(){									// CACP_Out_Buf[] was set ready and call by ACP_Tx_Handler(), 
 	
-	int i = 0;
+	int 	i = 0;
+	char	ACP_T_TEMP
 
-	ACP_TBUF = ACP_Out_Buf[ACP_Out_Buf_Index];
+
+	ACP_T_TEMP = ACP_Out_Buf[ACP_Out_Buf_Index];
 	
-	while (ACP_TBUF != Enter){
+	while (ACP_T_TEMP != Enter){
 		
 		EA = 0;									// Suspending all interrupt happen 
 		/* Interrupt disable for 1 byte period only */
@@ -573,19 +575,19 @@ void ACP_Tx(){									// CACP_Out_Buf[] was set ready and call by ACP_Tx_Handle
 		ACP_TxD0 = 0;							// sent Start bit "0" on P3.6(WR)
 		uS_Delay(104);
 		for (i=0;i<8; i++) {
-			if (ACP_TBUF & 0x80) {
+			if (ACP_T_TEMP & 0x80) {
 				ACP_TxD0 = 1;					// sent out "1"
 			}else {
 				ACP_TxD0 = 0;					// Sent out "0"
 			}
-			ACP_TBUF <<= 1; 					// ACP_TBUF left shift 1 bit 
+			ACP_T_TEMP <<= 1; 					// ACP_T_TEMP left shift 1 bit 
 			uS_Delay(104);
 		}
 		ACP_TxD0 = 1;							// sent Stop bit "1" on P3.6(WR)
 		uS_Delay(104);	
 		
 		ACP_Out_Buf_Index++
-		ACP_TBUF = ACP_Out_Buf[ACP_Out_Buf_Index];
+		ACP_T_TEMP = ACP_Out_Buf[ACP_Out_Buf_Index];
 		
 		EA = 1;									// Resume all interrupt
 	}
@@ -598,7 +600,7 @@ void ACP_Tx(){									// CACP_Out_Buf[] was set ready and call by ACP_Tx_Handle
 void ACP_Rx() interrupt 2 {			
 /* EX1 INT, vector=0013h, UART Simulator */
 	
-	char ACP_RBUF;
+	char ACP_R_TEMP;								// Same as UART Rx SBUF
 	
 	// Tx no need to using interrupt. 
 	// sbit ACP_RxD0 	= P3^7;					// RD
@@ -619,11 +621,11 @@ void ACP_Rx() interrupt 2 {
 			uS_Delay(104);
 			
 			if (ACP_RxD0 == 1){
-				ACP_RBUF |= 1;
-				ACP_RBUF << 1;				// ACP_SBUF left shift 1 bit 
+				ACP_R_TEMP |= 1;
+				ACP_R_TEMP << 1;				// ACP_SBUF left shift 1 bit 
 
 			} else {
-				ACP_RBUF << 1;				// ACP_SBUF left shift 1 bit 
+				ACP_R_TEMP << 1;				// ACP_SBUF left shift 1 bit 
 			} 	
 		}
 		
@@ -631,16 +633,16 @@ void ACP_Rx() interrupt 2 {
 		if (ACP_RxD0 != 1){ 				// Stop bit
 		/* One byte(10 bits) received sucessful */
 		
-			if(ACP_RBUF != Enter ){
+			if(ACP_R_TEMP != Enter ){
 			/* String receiving not complete */
 			
-				ACP_In_Buf[ACP_In_Buf_Index] = ACP_RBUF;	
+				ACP_In_Buf[ACP_In_Buf_Index] = ACP_R_TEMP;	
 				ACP_In_Buf_Index++;
 			}
 			else {								// ACP_In_Buf_Index >= ACP_In_Buf_Max 
 			/* String receiving completed */
 			
-				ACP_RBUF=0;
+				ACP_R_TEMP=0;
 				ACP_In_Buf_Index = 0;			// Reset UART_Inbuf_Index
 				Comm.ACP_Rx_Ready_Flg = 1; 		// For ACP_StateEvent()
 			}
@@ -648,7 +650,7 @@ void ACP_Rx() interrupt 2 {
 	} else {
 		/* One byte(10 bits) received failure */
 	
-		ACP_RBUF=0;
+		ACP_R_TEMP=0;
 		ACP_In_Buf_Index = 0;					// Reset UART_Inbuf_Index
 		Comm.ACP_Rx_Ready_Flg = 0; 				// 
 	}
@@ -793,6 +795,10 @@ Main(){
 
 	while(1){
 	
+		if(Main.WD_Rst_Flg){					// Set by IIMER0_10mS() interrupt 1
+			Main.WD_Rst_Flg = 0					// Clear flag
+			Watchdog();							// Implement Reset watchdog
+		}	
 		if(Main.Card_Det_Flg){					// Set by IIMER0_10mS() interrupt 1
 			Main.Card_Det_Flg = 0;				// Clear flag
 			Main.Card_Exist_Flg = Card_Det_Pin ;// Reading Key exist status
@@ -801,10 +807,7 @@ Main(){
 			Main.Temp_Rd_Flg = 0;				// Clear flag
 			Temperature_Reality = ADC_Rd();		// Implement ADC reading
 		}
-		if(Main.WD_Rst_Flg){					// Set by IIMER0_10mS() interrupt 1
-			Main.WD_Rst_Flg = 0					// Clear flag
-			Watchdog();							// Implement Reset watchdog
-		}
+
 	
 		PC_StateEvent();
 		ACP_StateEvent();
@@ -818,17 +821,17 @@ Main(){
 // ##### Event manipulate 
 /* PC Event manipulate */
 void PC_StateEvent(){
-
-	char 	Ack[5];							
-	/* Using array to reserve memory solidly, when implementing strcpy(), strcat() */
 	
-	int 	Resp;
+
+	char	Ack2PC[5];							
+	/* Using array to reserve memory solidly, when implementing strcpy(), strcat() */
+	bool 	Resp;
 
 	if(Comm.PC_Rx_Ready_Flg){
 
 
-		if ( Strcpm ( ACP_In_Buf,"command string 1") = 0) {
-		/* The content of ACP_In_Buf is not including "Enter" */
+		if (Strcpm(PC_In_Buf,"command string 1") = 0) {
+		/* Not including "Enter" in the content of PC_In_Buf  */
 			
 			/* perform properly reaction */
 			
@@ -838,16 +841,18 @@ void PC_StateEvent(){
 			
 			
 			
-			/* Acknowledge back to PC */
-			strcopy(Ack,"A");
-			strcat(Ack,ACUD_ID_Dec);
-			strcat(Ack,"command string 1");
-			strcat(Ack,Enter);
+			
+		/* Reply acknowledge back to PC */
+			strcopy(Ack2PC,"A");
+			strcat(Ack2PC,ACUD_ID_Dec);
+			strcat(Ack2PC,"command string 1");
+			strcat(Ack2PC,Enter);
+			/* "Enter" need to be included */
 				
-			Resp = PC_Tx_Handler(&Ack)
+			Resp = PC_Tx_Handler(&Ack2PC)
 			if(Resp == 1){
 			/* anknowledge back to PC successful */
-				ACP_In_Buf[ACP_In_Buf_Max] = {0};	
+				PC_In_Buf[PC_In_Buf_Max] = {0};	
 				Comm.PC_Rx_Ready_Flg = 0;
 			}		
 			else {
@@ -858,7 +863,7 @@ void PC_StateEvent(){
 			}
 		}
 
-		if ( Strcpm ( ACP_In_Buf,"command string 2") = 0) {
+		if ( Strcpm ( PC_In_Buf,"command string 2") = 0) {
 			
 			
 			
@@ -870,31 +875,37 @@ void PC_StateEvent(){
 /* ACP Event manipulate */
 void ACP_StateEvent(){
 
-	while(Comm.ACP_Rx_Ready_Flg){
+	char 	Ack2ACP[5]
+	bool 	resp
 
-		switch(ACP_In_Buf)
-			case: 
-				/* perform properly reaction */
-			
-			
-				break;
-				
-			case: 
-				/* perform properly reaction */
-				
-				
-				break;
-				
-			case: 
-				/* perform properly reaction */
-			
-	
-				bread;
+	if(Comm.ACP_Rx_Ready_Flg){				
+		
+		if (Strcpm(ACP_In_Buf,"command string 1") = 0) {
+			/* Not including "Enter" in the content of ACP_In_Buf  */
+		
+		
+		
+		
+		
+		
+		
+		
+		
 				
 		/* Reply acknowledge back to ACP */
-			Resp = ACP_Tx_Handler(&Command, Len)
+		
+		
+			Resp = ACP_Tx_Handler(&Ack2ACP)
 			if (Resp == 1)
+			/* anknowledge back to ACP successful */
+				ACP_In_Buf[ACP_In_Buf_Max] = {0};	
 				Comm.ACP_Rx_Ready_Flg = 0
+			else {
+			/* anknowledge back to ACP failure */	
+				Comm.ACP_Rx_Ready_Flg = 0;
+				/* Ignore this failure. assuming command will be resend again by PC site */
+			
+			}
 	}
 }
 
