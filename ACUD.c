@@ -3,14 +3,15 @@
 // ACUD 
 // Auther: Duncan Tseng
 
-// Ver : W077  H1700
+// Ver : W081  H1600
 
-// 
+// on going: PC_StateEvent() 
 
 
 // @@@@@@@@@@ Declare @@@@@@@@@@
 
 #include <reg51.h>
+#include <string.h>
 
 /* Special Function Register 
 sfr 	P0   	= 0x80;
@@ -96,7 +97,7 @@ union Bit_Field {						// all variables in union share same memory
 	/* 注意: type 必須為整數(signed or unsigned皆可) */
 	
 		// relate to PC
-		unsigned UART_Tx_Busy_Flg 	: 1;				
+		unsigned PC_Tx_Busy_Flg 	: 1;				
 
 		unsigned PC_Rx_Ready_Flg 	: 1;
 		
@@ -441,22 +442,23 @@ void PC_UART_Init(float Fosc ,int Baudrate){	// Include T1 init
 
 }
 
-int PC_Tx_Handler(int *2PC_Data_Ptr){PC
-	/* This function in order to avoid the conflick cause by UART Tx jim */
-	
+int PC_Tx_Handler(int *2PC_Indiv_Ptr){			// Pointer of individual data array (2PC_Indiv[])
+		/* Data in 2PC_Indiv[] including "Enter" as tail */
 	int i = 0;
 	char PC_TBUF;
 	
-	if(!(Comm.UART_Tx_Busy_Flg)){				// UART Tx avilable
-		Comm.UART_Tx_Busy_Flg = 1; 				// clear by PC_UART_RxTx() interrupt 4
+	if(!(Comm.PC_Tx_Busy_Flg)){				    // PC Tx avilable
+	/* Got the rigth to allow data in 2PC_Indiv[] port to PC_Out_Buf[] */
+	
+		Comm.PC_Tx_Busy_Flg = 1; 				// clear by PC_UART_RxTx() interrupt 4
 
-		PC_TBUF = *2PC_Data_Ptr;
+		PC_TBUF = *2PC_Indiv_Ptr;
 		while(PC_TBUF!= Enter){
-			PC_Out_Buf[i]=*2PC_Data_Ptr;
+			PC_Out_Buf[i]=*2PC_Indiv_Ptr;
 			i++;
-			2PC_Data_Ptr++;
+			2PC_Indiv_Ptr++;
 		}
-		PC_Out_Buf[i]=*2PC_Data_Ptr;			// Put "Enter" into PC_Out_Buf[]
+		PC_Out_Buf[i]=*2PC_Indiv_Ptr;			// Put "Enter" into PC_Out_Buf[]
 		
 		PC_Out_Buf_Index = 0;					// Initial PC_Out_Buf_Index
 		TI=1; 									// Triger UART_ISR() to start UART_Tx 
@@ -464,7 +466,9 @@ int PC_Tx_Handler(int *2PC_Data_Ptr){PC
 		return 1;								// data transmit permit
 	}
 	else {
-		
+	/*  2PC_Indiv[] does not to port to PC_Out_Buf[] */	
+	
+	
 		return 0;								// data transmit deny
 	}
 }
@@ -483,15 +487,19 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 			RI = 0;								// SCON.RI=0, force UART_Rx ready to receive again
 		}
 		else {									// PC_In_Buf_Index >= PC_In_Buf_Max 
-
+			PC_In_Buf[PC_In_Buf_Index] = SBUF;	
+			/* "Enter" including in PC_In_Buf[] */
+			
 			PC_In_Buf_Index = 0;				// Reset PC_In_Buf_Index
 			Comm.PC_Rx_Ready_Flg = 1; 			// For PC_StateEvent()
 		}
 	}
 
 	if ( TI ){    								// SCON.TI, TI=1 means previous content have been sent.   
-		
-		// Comm.UART_Tx_Busy_Flg had been set in PC_Tx_Handler()		
+		/* PC_Out_Buf[] hab been prepared ready and call by PC_Tx_Handler(),
+		  "Enter" char no neet to send to ACP */ 
+		/* Comm.PC_Tx_Busy_Flg had been set in PC_Tx_Handler() */
+
 		SBUF = PC_Out_Buf[PC_Out_Buf_Index];
 		
 		if ((SBUF != Enter)) {					
@@ -501,8 +509,8 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 			PC_Out_Buf_Index++;
 		}			
 		else {									// UART Tx completed, UART_Outbuf_Index >= UART_Outbuf_Max 
-			PC_Out_Buf_Index=0;				// Reset PC_Out_Buf_Index
-			Comm.UART_Tx_Busy_Flg = 0;			// Clear UART Tx busy
+			PC_Out_Buf_Index=0;					// Reset PC_Out_Buf_Index
+			Comm.PC_Tx_Busy_Flg = 0;			// Clear UART Tx busy
 			PC_485Tx = 0; 						// Disable RS485 Tx ( =Rx enable)
 		}
 		TI = 0;									// SCON.TI=0, UART_Tx ready to sent 
@@ -524,8 +532,8 @@ void ACP_Init(){
 	/* EX1 will be enabled in main() */
 }
 
-int ACP_Tx_Handler(int *2ACP_Data_Ptr){
-	/* data need to be ported to PC_Out_Buf[] before by way of UART */
+int ACP_Tx_Handler(int *2ACP_Indiv_Ptr){		// Pointer of individual data array(2ACP_Indiv[])
+	/* Data in 2ACP_Indiv[] including "Enter" as tail */
 	
 	// sbit ACP_RxD0 	= P3^7;					// RD
 	// sbit ACP_TxD0	= P3^6;					// WR
@@ -536,18 +544,20 @@ int ACP_Tx_Handler(int *2ACP_Data_Ptr){
 	char ACP_T_TEMP;
 	
 	if(!(Comm.ACP_Tx_Busy_Flg)){				// IOSerial Tx avilable
+	/* Got the right to allow data in 2ACP_Indiv[] port to ACP_Out_Buf[] */	
+		
 		Comm.ACP_Tx_Busy_Flg = 1; 				// clear by ACP_Tx()
 		
-		ACP_T_TEMP=*2ACP_Data_Ptr;
+		ACP_T_TEMP=*2ACP_Indiv_Ptr;
 		while(ACP_T_TEMP != Enter) {
-			ACP_Out_Buf[i]=*2ACP_Data_Ptr;
+			ACP_Out_Buf[i]=*2ACP_Indiv_Ptr;
 			i++;
-			2ACP_Data_Ptr++;
+			2ACP_Indiv_Ptr++;
 		}
-		ACP_Out_Buf[i]=*2ACP_Data_Ptr;			// Put "Enter" into ACP_Out_Buf[]
+		ACP_Out_Buf[i]=*2ACP_Indiv_Ptr;			// Put "Enter" into ACP_Out_Buf[]
 		
 		ACP_Out_Buf_Index = 0;					// Initial PC_Out_Buf_Index
-		ACP_Tx();								// Call ACP_Tx() to transmit data via ACP
+		ACP_Tx_PhyLayer();						// Call ACP_Tx_PhyLayer() to transmit data via ACP
 		
 		return 1;								// data transmit permit
 	}
@@ -558,7 +568,10 @@ int ACP_Tx_Handler(int *2ACP_Data_Ptr){
 	}
 }
 
-void ACP_Tx(){									// CACP_Out_Buf[] was set ready and call by ACP_Tx_Handler(), 
+void ACP_Tx_Phylayer(){									
+	/* ACP_Out_Buf[] had been prepared ready and call by ACP_Tx_Handler(),
+	   "Enter" char no neet to send to ACP */
+	/* Comm.ACP_Tx_Busy_Flg had been set in ACP_Tx_Handler() */	
 	
 	int 	i = 0;
 	char	ACP_T_TEMP
@@ -642,6 +655,9 @@ void ACP_Rx() interrupt 2 {
 			else {								// ACP_In_Buf_Index >= ACP_In_Buf_Max 
 			/* String receiving completed */
 			
+				ACP_In_Buf[ACP_In_Buf_Index] = ACP_R_TEMP;
+				/* "Enter" including in ACP_In_Buf[] */
+				
 				ACP_R_TEMP=0;
 				ACP_In_Buf_Index = 0;			// Reset UART_Inbuf_Index
 				Comm.ACP_Rx_Ready_Flg = 1; 		// For ACP_StateEvent()
@@ -823,15 +839,16 @@ Main(){
 void PC_StateEvent(){
 	
 
-	char	Ack2PC[5];							
-	/* Using array to reserve memory solidly, when implementing strcpy(), strcat() */
+	char	2PC_Indiv[5];						// Individual data array to PC					
+	/* Using array to instead of pointer to reserve memory firmdly, when implementing strcpy(), strcat() */
 	bool 	Resp;
+	char	*PC_Comd_Temp[4]
 
 	if(Comm.PC_Rx_Ready_Flg){
 
 
-		if (Strcpm(PC_In_Buf,"command string 1") = 0) {
-		/* Not including "Enter" in the content of PC_In_Buf  */
+		if (Strncpm(PC_In_Buf,"C"+ACUD_ID_Dec,4) = 0) {			// check C+ACUD_ID 
+		/* "Enter" was included in PC_In_Buf[]  */
 			
 			/* perform properly reaction */
 			
@@ -843,13 +860,13 @@ void PC_StateEvent(){
 			
 			
 		/* Reply acknowledge back to PC */
-			strcopy(Ack2PC,"A");
-			strcat(Ack2PC,ACUD_ID_Dec);
-			strcat(Ack2PC,"command string 1");
-			strcat(Ack2PC,Enter);
+			strcopy(2PC_Indiv,"A");
+			strcat(2PC_Indiv,ACUD_ID_Dec);
+			strcat(2PC_Indiv,"command string 1");
+			strcat(2PC_Indiv,Enter);
 			/* "Enter" need to be included */
 				
-			Resp = PC_Tx_Handler(&Ack2PC)
+			Resp = PC_Tx_Handler(&2PC_Indiv)
 			if(Resp == 1){
 			/* anknowledge back to PC successful */
 				PC_In_Buf[PC_In_Buf_Max] = {0};	
@@ -875,13 +892,15 @@ void PC_StateEvent(){
 /* ACP Event manipulate */
 void ACP_StateEvent(){
 
-	char 	Ack2ACP[5]
+	char 	2ACP_Indiv[5]								// Individual data array to ACP	
+	/* Using array to instead of pointer to reserve memory firmdly, when implementing strcpy(), strcat() */
 	bool 	resp
+	
 
 	if(Comm.ACP_Rx_Ready_Flg){				
 		
 		if (Strcpm(ACP_In_Buf,"command string 1") = 0) {
-			/* Not including "Enter" in the content of ACP_In_Buf  */
+			/* "Enter" was included in ACP_In_Buf  */
 		
 		
 		
@@ -895,7 +914,7 @@ void ACP_StateEvent(){
 		/* Reply acknowledge back to ACP */
 		
 		
-			Resp = ACP_Tx_Handler(&Ack2ACP)
+			Resp = ACP_Tx_Handler(&2ACP_Indiv)
 			if (Resp == 1)
 			/* anknowledge back to ACP successful */
 				ACP_In_Buf[ACP_In_Buf_Max] = {0};	
