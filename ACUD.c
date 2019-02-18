@@ -3,7 +3,7 @@
 // ACUD 
 // Auther: Duncan Tseng
 
-// Ver : W077  H1700
+// Ver : W081  H1000
 
 // 
 
