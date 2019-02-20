@@ -3,7 +3,7 @@
 // ACUD 
 // Auther: Duncan Tseng
 
-// Ver : W083  H0700
+// Ver : W083  H1100
 
 // on going: PC_StateEvent() 
 
@@ -13,7 +13,7 @@
 #include <reg51.h>
 #include <string.h>
 
-/* Special Function Register 
+/* Special Function Register that Declared in reg51.h
 sfr 	P0   	= 0x80;
 sfr 	P1   	= 0x90;
 sfr 	P2   	= 0xA0;
@@ -37,7 +37,7 @@ sfr 	SCON 	= 0x98;
 sfr 	SBUF 	= 0x99;
 */
 
-/* SPF BIT */
+/* SPF BIT that Declared in reg51.h
 // PSW   
 sbit 	CY   	= 0xD7;
 sbit 	AC   	= 0xD6;
@@ -81,7 +81,7 @@ sbit 	ET1  	= 0xAB;							// sbit ET1 = 0xA8^3
 sbit 	EX1  	= 0xAA;							// sbit EX1 = 0xA8^2
 sbit 	ET0  	= 0xA9;							// sbit ET0 = 0xA8^1
 sbit 	EX0  	= 0xA8;							// sbit EX0 = 0xA8^0
-
+*/
 
 /* Declare related to Timer */
 
@@ -568,7 +568,7 @@ int ACP_Tx_Handler(int *2ACP_Indiv_Ptr){		// Pointer of individual data array(2A
 	}
 }
 
-void ACP_Tx_Phylayer(){									
+void ACP_Tx_PhyLayer(){									
 	/* ACP_Out_Buf[] had been prepared ready and call by ACP_Tx_Handler(),
 	   "Enter" char no neet to send to ACP */
 	/* Comm.ACP_Tx_Busy_Flg had been set in ACP_Tx_Handler() */	
