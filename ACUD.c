@@ -4,7 +4,7 @@
 // Auther: Duncan Tseng
 
 
-// Ver : W082  H0900
+// Ver : W083  H1100
 
 
 // on going: PC_StateEvent() 
@@ -15,7 +15,7 @@
 #include <reg51.h>
 #include <string.h>
 
-/* Special Function Register 
+/* Special Function Register that Declared in reg51.h
 sfr 	P0   	= 0x80;
 sfr 	P1   	= 0x90;
 sfr 	P2   	= 0xA0;
@@ -39,7 +39,7 @@ sfr 	SCON 	= 0x98;
 sfr 	SBUF 	= 0x99;
 */
 
-/* SPF BIT */
+/* SPF BIT that Declared in reg51.h
 // PSW   
 sbit 	CY   	= 0xD7;
 sbit 	AC   	= 0xD6;
@@ -83,7 +83,7 @@ sbit 	ET1  	= 0xAB;							// sbit ET1 = 0xA8^3
 sbit 	EX1  	= 0xAA;							// sbit EX1 = 0xA8^2
 sbit 	ET0  	= 0xA9;							// sbit ET0 = 0xA8^1
 sbit 	EX0  	= 0xA8;							// sbit EX0 = 0xA8^0
-
+*/
 
 /* Declare related to Timer */
 
@@ -570,7 +570,7 @@ int ACP_Tx_Handler(int *2ACP_Indiv_Ptr){		// Pointer of individual data array(2A
 	}
 }
 
-void ACP_Tx_Phylayer(){									
+void ACP_Tx_PhyLayer(){									
 	/* ACP_Out_Buf[] had been prepared ready and call by ACP_Tx_Handler(),
 	   "Enter" char no neet to send to ACP */
 	/* Comm.ACP_Tx_Busy_Flg had been set in ACP_Tx_Handler() */	
@@ -840,17 +840,25 @@ Main(){
 /* PC Event manipulate */
 void PC_StateEvent(){
 	
-
+	char	*Strig_Temp ;
 	char	2PC_Indiv[5];						// Individual data array to PC					
 	/* Using array to instead of pointer to reserve memory firmdly, when implementing strcpy(), strcat() */
 	bool 	Resp;
-	char	*PC_Comd_Temp[4]
+	
 
 	if(Comm.PC_Rx_Ready_Flg){
-
-
-		if (Strncpm(PC_In_Buf,"C"+ACUD_ID_Dec,4) = 0) {			// check C+ACUD_ID 
-		/* "Enter" was included in PC_In_Buf[]  */
+		
+		String_Temp = ACUD_ID_Dec;
+		
+		if (strstr(PC_In_Buf,String_Temp)){	// String_Temp does occurre in PC_In_Buf 
+		/* strstr(string1,string2)
+		   This function returns a position points to the first character of the 
+		   found s2 in s1 otherwise a null pointer.
+		   if s2 is not present in s1, s1 is returned. */
+			
+			String_Temp = "C";
+			if (strstr(PC_In_Buf,String_Temp){				// "Command type" form PC
+			/* "Enter" was included in PC_In_Buf[]  */
 			
 			/* perform properly reaction */
 			
@@ -861,33 +869,37 @@ void PC_StateEvent(){
 			
 			
 			
-		/* Reply acknowledge back to PC */
-			strcopy(2PC_Indiv,"A");
-			strcat(2PC_Indiv,ACUD_ID_Dec);
-			strcat(2PC_Indiv,"command string 1");
-			strcat(2PC_Indiv,Enter);
+			/* Reply acknowledge back to PC */
+				strcopy(2PC_Indiv,"A");
+				strcat(2PC_Indiv,ACUD_ID_Dec);
+				strcat(2PC_Indiv,"command string 1");
+				strcat(2PC_Indiv,Enter);
 			/* "Enter" need to be included */
 				
-			Resp = PC_Tx_Handler(&2PC_Indiv)
-			if(Resp == 1){
-			/* anknowledge back to PC successful */
-				PC_In_Buf[PC_In_Buf_Max] = {0};	
-				Comm.PC_Rx_Ready_Flg = 0;
-			}		
-			else {
-			/* anknowledge back to PC failure */	
+				Resp = PC_Tx_Handler(&2PC_Indiv)
+			i	f(Resp == 1){
+				/* anknowledge back to PC successful */
+					PC_In_Buf[PC_In_Buf_Max] = {0};	
+					Comm.PC_Rx_Ready_Flg = 0;
+				}		
+				else {
+				/* anknowledge back to PC failure */	
 			
-				Comm.PC_Rx_Ready_Flg = 0;
-				/* Ignore this failure. assuming command will be resend again by PC site */
+					Comm.PC_Rx_Ready_Flg = 0;
+					/* Ignore this failure. assuming command will be resend again by PC site */
+				}
+			}
+
+			else if ( findstr(PC_In_Buf,"D")){			// "Confirm type" form PC
+			
+			
+			
+
 			}
 		}
-
-		if ( Strcpm ( PC_In_Buf,"command string 2") = 0) {
-			
-			
-			
-
-		}
+		/* ACUD_ID_Dec is not match */
+		PC_In_Buf[PC_In_Buf_Max] = {0};	
+		Comm.PC_Rx_Ready_Flg = 0
 	}
 }
 
