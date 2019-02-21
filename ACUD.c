@@ -2,13 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-
-
-// Ver : W084  H0730
-
-
-
-
+// Ver : W084  H0950
 // on going: PC_StateEvent() 
 
 
@@ -16,6 +10,29 @@
 
 #include <AT89X51.h>
 #include <string.h>
+
+
+/* Keil C Data types
+Data Types			Bits	Bytes	Value Range
+bit					1	 			0 to 1
+signed char			8		1		-128 — +127
+unsigned char		8		1		0 — 255
+enum				8/16	1/2		-128 — +127 or -32768 — +32767
+signed short int	16		2		-32768 — +32767
+unsigned short int	16		2		0 — 65535
+signed int			16		2		-32768 — +32767
+unsigned int		16		2		0 — 65535
+signed long int		32		4		-2147483648 — +2147483647
+unsigned long int	32		4		0 — 4294967295
+float				32		4		±1.175494E-38 — ±3.402823E+38
+double				32		4		±1.175494E-38 — ±3.402823E+38
+sbit				1	 			0 or 1
+sfr					8		1		0 — 255
+sfr16				16		2		0 — 65535
+*/
+
+
+
 
 /* Special Function Register that Declared in reg51.h
 sfr 	P0   	= 0x80;
@@ -89,7 +106,7 @@ sbit 	EX0  	= 0xA8;							// sbit EX0 = 0xA8^0
 
 /* Declare related to Timer */
 
-short 	10mS_counter;					// 2 bytes: 0-65535
+unsigned short int 		10mS_counter;			// 2 bytes: 0-65535
 
 /* Declare related to Communication */
 union Bit_Field {						// all variables in union share same memory
@@ -128,11 +145,11 @@ union Bit_Field {						// all variables in union share same memory
 
 
 /* Declare related to UART */
-#define Fosc					22.1184;		// ***** Need to be confirmed (0r 11.0592 )
-#define Baudrate				9600;			// ***** Need to be confirmed
+#define Fosc				22.1184;		// ***** Need to be confirmed (0r 11.0592 )
+#define Baudrate			9600;			// ***** Need to be confirmed
 #define PC_In_Buf_Max 		5;				// ***** Need to be confirmed
 #define PC_Out_Buf_Max		5;				// ***** Need to be confirmed
-#define Enter					0x13;			// ASCII 13: carry Return
+#define Enter				0x13;			// ASCII 13: carry Return
 
 int 	PC_In_Buf_Index;
 int 	PC_Out_buf_Index;
@@ -301,7 +318,7 @@ void TIMER0_10mS_Init(int N){					// 10*mS timer
 	
 void TIMER0_10mS() interrupt 1 {				// Timer0 INT vector=000Bh
 	
-	10mS_Counter++
+	10mS_Counter = 10mS_Counter+1;
 
 	
 	if(10mS_Counter % 10 == 0){					// 100mS(10mS*10) period
