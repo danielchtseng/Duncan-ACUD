@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W084  H0950
+// Ver : W084  H1000
 // on going: PC_StateEvent() 
 
 
@@ -109,7 +109,7 @@ sbit 	EX0  	= 0xA8;							// sbit EX0 = 0xA8^0
 unsigned short int 		10mS_counter;			// 2 bytes: 0-65535
 
 /* Declare related to Communication */
-union Bit_Field {						// all variables in union share same memory
+union {						// all variables in union share same memory
 	/* Note: datatype must being "signed" or "unsigned" */
 	
 	unsigned Comm;
@@ -128,7 +128,7 @@ union Bit_Field {						// all variables in union share same memory
 		
 		/* relate to ADC */
 		unsigned ADC_Rd_Busy_Flg 	: 1;
-	};
+	}setbit;
 };
 /* Bit Field: 是一種省空間的特殊 data member, 可以使用特定幾個 bit 來放 data.
 // The declaration of a bit-field has the following form inside a structure
@@ -145,11 +145,11 @@ union Bit_Field {						// all variables in union share same memory
 
 
 /* Declare related to UART */
-#define Fosc				22.1184;		// ***** Need to be confirmed (0r 11.0592 )
-#define Baudrate			9600;			// ***** Need to be confirmed
-#define PC_In_Buf_Max 		5;				// ***** Need to be confirmed
-#define PC_Out_Buf_Max		5;				// ***** Need to be confirmed
-#define Enter				0x13;			// ASCII 13: carry Return
+#define Fosc				22.1184			// ***** Need to be confirmed (0r 11.0592 )
+#define Baudrate			9600			// ***** Need to be confirmed
+#define PC_In_Buf_Max 		5				// ***** Need to be confirmed
+#define PC_Out_Buf_Max		5				// ***** Need to be confirmed
+#define Enter				0x13			// ASCII 13: carry Return
 
 int 	PC_In_Buf_Index;
 int 	PC_Out_buf_Index;
@@ -163,8 +163,8 @@ sbit 	UART_RxD1 		= P3^0;					// sbit RXD     = 0xB0;
 
 /* Declare related to ACP */
 // related to Handler 
-#define ACP_In_Buf_Max 			5;				// ***** Need to be confirmed
-#define ACP_Out_Buf_Max			5;				// ***** Need to be confirmed
+#define ACP_In_Buf_Max 			5				// ***** Need to be confirmed
+#define ACP_Out_Buf_Max			5				// ***** Need to be confirmed
 int 	ACP_In_Buf_Index;
 int 	ACP_Out_Buf_Index;
 char 	ACP_In_Buf[ACP_In_Buf_Max];
@@ -195,10 +195,10 @@ sbit 	ADC_DO_Pin		= P1^0;
 
 /* Declare related to ACUD */
 
-#define Checkout_Defa_Temp	26;					// Default temperature
-#define Checkin_Defa_Temp	23;
-#define Auto_Temperature	23;
-#define Auto_Defa_Period	10;					// Default period
+#define Checkout_Defa_Temp	26					// Default temperature
+#define Checkin_Defa_Temp	23
+#define Auto_Temperature	23
+#define Auto_Defa_Period	10					// Default period
 int		ACUD_ID_Dec;
 float 	Temperature_Setting;
 float	Temperature_Reality;
@@ -213,7 +213,7 @@ sbit 	Air_Cooler_Pin	= P0^3;					//
 sbit 	Air_Heater_Pin	= P0^4;					// 
 sbit 	Card_Det_Pin  	= P0^5;					// Card detection
 
-union Bit_Field {								// all variables in union share same memory
+union  {								// all variables in union share same memory
 	
 	unsigned Main;								// Main()
 	struct {		// 注意: type 必須為整數(signed or unsigned皆可)
@@ -225,7 +225,7 @@ union Bit_Field {								// all variables in union share same memory
 		unsigned Temp_Rd_Flg			: 1;	// Temperautre reading request
 		unsigned WD_Rst_Flg				: 1;	// WatchDog reset request
 		unsigned 						: 1;
-	};
+	}setbit;
 };
 
 
