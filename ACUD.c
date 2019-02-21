@@ -3,14 +3,18 @@
 // ACUD 
 // Auther: Duncan Tseng
 
+
 // Ver : W084  H0730
+
+
+
 
 // on going: PC_StateEvent() 
 
 
 // @@@@@@@@@@ Declare @@@@@@@@@@
 
-#include <reg51.h>
+#include <AT89X51.h>
 #include <string.h>
 
 /* Special Function Register that Declared in reg51.h
@@ -92,7 +96,7 @@ union Bit_Field {						// all variables in union share same memory
 	/* Note: datatype must being "signed" or "unsigned" */
 	
 	unsigned Comm;
-	Struct {		
+	struct {		
 
 	/* 注意: type 必須為整數(signed or unsigned皆可) */
 	
@@ -107,7 +111,7 @@ union Bit_Field {						// all variables in union share same memory
 		
 		/* relate to ADC */
 		unsigned ADC_Rd_Busy_Flg 	: 1;
-	}
+	};
 };
 /* Bit Field: 是一種省空間的特殊 data member, 可以使用特定幾個 bit 來放 data.
 // The declaration of a bit-field has the following form inside a structure
@@ -195,7 +199,7 @@ sbit 	Card_Det_Pin  	= P0^5;					// Card detection
 union Bit_Field {								// all variables in union share same memory
 	
 	unsigned Main;								// Main()
-	Struct {		// 注意: type 必須為整數(signed or unsigned皆可)
+	struct {		// 注意: type 必須為整數(signed or unsigned皆可)
 		
 		unsigned Card_Exist_Flg 		: 1; 	// 1: card existing, 0: card dispear				
 		unsigned Air_Cool_Flg			: 1; 	// 1: cool, 0: warm
@@ -204,7 +208,7 @@ union Bit_Field {								// all variables in union share same memory
 		unsigned Temp_Rd_Flg			: 1;	// Temperautre reading request
 		unsigned WD_Rst_Flg				: 1;	// WatchDog reset request
 		unsigned 						: 1;
-	}
+	};
 };
 
 
