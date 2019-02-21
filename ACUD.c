@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W084  H1500
+// Ver : W084  H1515
 // on going: 
 
 
@@ -120,9 +120,9 @@ unsigned short 	10mS_Counter;			// 2 bytes: 0-65535
 */
 
 /* Declare related to Communication */
-union {											// union: all variables in union share same memory
+//*union {											// union: all variables in union share same memory
 	/* Note: data type must be signed or unsigned */
-	unsigned char	Comm_Flag;
+//*	unsigned char	Comm_Flag;
 	
 	struct {		
 
@@ -138,9 +138,9 @@ union {											// union: all variables in union share same memory
 		/* relate to ADC */
 		unsigned char ADC_Rd_Busy_Flg 	: 1;
 		
-	};
+	}Comm; 
 	
-}Comm;
+//*} Comm;
 
 
 
@@ -213,10 +213,10 @@ sbit 	Air_Cooler_Pin	= P0^3;					//
 sbit 	Air_Heater_Pin	= P0^4;					// 
 sbit 	Card_Det_Pin  	= P0^5;					// Card detection
 
-union {								// union: all variables in union share same memory
+//* union {								// union: all variables in union share same memory
 	/* Note: data type must be signed or unsigned */
 
-	unsigned char Main_Flag;
+//*	unsigned char Main_Flag;
 	struct {		
 		
 		unsigned char Card_Exist_Flg 		: 1; 	// 1: card existing, 0: card dispear				
@@ -226,8 +226,8 @@ union {								// union: all variables in union share same memory
 		unsigned char Temp_Rd_Flg			: 1;	// Temperautre reading request
 		unsigned char WD_Rst_Flg				: 1;	// WatchDog reset request
 		unsigned 						: 1;
-	};
-}Main;
+	}Main;
+//* } Main;
 
 
 
