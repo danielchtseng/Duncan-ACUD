@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W084  H1000
+// Ver : W084  H1125
 // on going: PC_StateEvent() 
 
 
@@ -108,28 +108,7 @@ sbit 	EX0  	= 0xA8;							// sbit EX0 = 0xA8^0
 
 unsigned short int 		10mS_counter;			// 2 bytes: 0-65535
 
-/* Declare related to Communication */
-union {						// all variables in union share same memory
-	/* Note: datatype must being "signed" or "unsigned" */
-	
-	unsigned Comm;
-	struct {		
 
-	/* 注意: type 必須為整數(signed or unsigned皆可) */
-	
-		// relate to PC
-		unsigned PC_Tx_Busy_Flg 	: 1;				
-
-		unsigned PC_Rx_Ready_Flg 	: 1;
-		
-		/* relate to ACP */
-		unsigned ACP_Tx_Busy_Flg 	: 1;		
-		unsigned ACP_Rx_Ready_Flg 	: 1;	
-		
-		/* relate to ADC */
-		unsigned ADC_Rd_Busy_Flg 	: 1;
-	}setbit;
-};
 /* Bit Field: 是一種省空間的特殊 data member, 可以使用特定幾個 bit 來放 data.
 // The declaration of a bit-field has the following form inside a structure
 // 		struct {
@@ -139,8 +118,28 @@ union {						// all variables in union share same memory
 // For example
 //      struct {
 //			unsigned int age : 1;
-//		} Flag Name;   						*/
+//		} Flag Name;   						
+*/
 
+/* Declare related to Communication */
+union {											// all variables in union share same memory
+	/* Note: datatype must being "signed" or "unsigned" */
+	
+	struct {		
+
+		// relate to PC
+		unsigned char PC_Tx_Busy_Flg 	: 1;				
+
+		unsigned char PC_Rx_Ready_Flg 	: 1;
+		
+		/* relate to ACP */
+		unsigned char ACP_Tx_Busy_Flg 	: 1;		
+		unsigned char ACP_Rx_Ready_Flg 	: 1;	
+		
+		/* relate to ADC */
+		unsigned char ADC_Rd_Busy_Flg 	: 1;
+	}Flag;
+}Comm;
 
 
 
@@ -213,20 +212,19 @@ sbit 	Air_Cooler_Pin	= P0^3;					//
 sbit 	Air_Heater_Pin	= P0^4;					// 
 sbit 	Card_Det_Pin  	= P0^5;					// Card detection
 
-union  {								// all variables in union share same memory
+union {								// all variables in union share same memory
 	
-	unsigned Main;								// Main()
 	struct {		// 注意: type 必須為整數(signed or unsigned皆可)
 		
-		unsigned Card_Exist_Flg 		: 1; 	// 1: card existing, 0: card dispear				
-		unsigned Air_Cool_Flg			: 1; 	// 1: cool, 0: warm
-		unsigned Air_Auto_Flg 			: 1; 	// 1: Auto mode, decide by ACP	
-		unsigned Card_Det_Flg 			: 1;	// Card detect request	
-		unsigned Temp_Rd_Flg			: 1;	// Temperautre reading request
-		unsigned WD_Rst_Flg				: 1;	// WatchDog reset request
+		unsigned char Card_Exist_Flg 		: 1; 	// 1: card existing, 0: card dispear				
+		unsigned char Air_Cool_Flg			: 1; 	// 1: cool, 0: warm
+		unsigned char Air_Auto_Flg 			: 1; 	// 1: Auto mode, decide by ACP	
+		unsigned char Card_Det_Flg 			: 1;	// Card detect request	
+		unsigned char Temp_Rd_Flg			: 1;	// Temperautre reading request
+		unsigned char WD_Rst_Flg				: 1;	// WatchDog reset request
 		unsigned 						: 1;
-	}setbit;
-};
+	}Flag;
+}Main;
 
 
 
@@ -322,12 +320,12 @@ void TIMER0_10mS() interrupt 1 {				// Timer0 INT vector=000Bh
 
 	
 	if(10mS_Counter % 10 == 0){					// 100mS(10mS*10) period
-		Main.Card_Det_Flg = 1;
+		Main.Flag.Card_Det_Flg = 1;
 		Main.WD_Res_Flg = 1;		
 	}
 	if(10mS_Counter % 100 == 0){				// 1 Second(10mS*100) period
 
-		Main.Temp_Rd_Flg = 1;
+		Main.Flag.Temp_Rd_Flg = 1;
 	}
 	if(10mS_Counter == 6000){					// 1 Minute
 		10mS_Counter= 0;						// Reset 10mS_Counter
@@ -468,10 +466,10 @@ int PC_Tx_Handler(int *2PC_Indiv_Ptr){			// Pointer of individual data array (2P
 	int i = 0;
 	char PC_TBUF;
 	
-	if(!(Comm.PC_Tx_Busy_Flg)){				    // PC Tx avilable
+	if(!(Comm.Flag.PC_Tx_Busy_Flg)){				    // PC Tx avilable
 	/* Got the rigth to allow data in 2PC_Indiv[] port to PC_Out_Buf[] */
 	
-		Comm.PC_Tx_Busy_Flg = 1; 				// clear by PC_UART_RxTx() interrupt 4
+		Comm.Flag.PC_Tx_Busy_Flg = 1; 				// clear by PC_UART_RxTx() interrupt 4
 
 		PC_TBUF = *2PC_Indiv_Ptr;
 		while(PC_TBUF!= Enter){
@@ -512,14 +510,14 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 			/* "Enter" character not including in PC_In_Buf[] */
 			
 			PC_In_Buf_Index = 0;				// Reset PC_In_Buf_Index
-			Comm.PC_Rx_Ready_Flg = 1; 			// For PC_StateEvent()
+			Comm.Flag.PC_Rx_Ready_Flg = 1; 			// For PC_StateEvent()
 		}
 	}
 
 	if ( TI ){    								// SCON.TI, TI=1 means previous content have been sent.   
 		/* PC_Out_Buf[] hab been prepared ready and call by PC_Tx_Handler(),
 		  "Enter" char no neet to send to ACP */ 
-		/* Comm.PC_Tx_Busy_Flg had been set in PC_Tx_Handler() */
+		/* Comm.Flag.PC_Tx_Busy_Flg had been set in PC_Tx_Handler() */
 
 		SBUF = PC_Out_Buf[PC_Out_Buf_Index];
 		
@@ -531,7 +529,7 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 		}			
 		else {									// UART Tx completed, UART_Outbuf_Index >= UART_Outbuf_Max 
 			PC_Out_Buf_Index=0;					// Reset PC_Out_Buf_Index
-			Comm.PC_Tx_Busy_Flg = 0;			// Clear UART Tx busy
+			Comm.Flag.PC_Tx_Busy_Flg = 0;			// Clear UART Tx busy
 			PC_485Tx = 0; 						// Disable RS485 Tx ( =Rx enable)
 		}
 		TI = 0;									// SCON.TI=0, UART_Tx ready to sent 
@@ -564,10 +562,10 @@ int ACP_Tx_Handler(int *2ACP_Indiv_Ptr){		// Pointer of individual data array(2A
 	int i = 0;
 	char ACP_T_TEMP;
 	
-	if(!(Comm.ACP_Tx_Busy_Flg)){				// IOSerial Tx avilable
+	if(!(Comm.Flag.ACP_Tx_Busy_Flg)){				// IOSerial Tx avilable
 	/* Got the right to allow data in 2ACP_Indiv[] port to ACP_Out_Buf[] */	
 		
-		Comm.ACP_Tx_Busy_Flg = 1; 				// clear by ACP_Tx()
+		Comm.Flag.ACP_Tx_Busy_Flg = 1; 				// clear by ACP_Tx()
 		
 		ACP_T_TEMP=*2ACP_Indiv_Ptr;
 		while(ACP_T_TEMP != Enter) {
@@ -592,7 +590,7 @@ int ACP_Tx_Handler(int *2ACP_Indiv_Ptr){		// Pointer of individual data array(2A
 void ACP_Tx_PhyLayer(){									
 	/* ACP_Out_Buf[] had been prepared ready and call by ACP_Tx_Handler(),
 	   "Enter" char no neet to send to ACP */
-	/* Comm.ACP_Tx_Busy_Flg had been set in ACP_Tx_Handler() */	
+	/* Comm.Flag.ACP_Tx_Busy_Flg had been set in ACP_Tx_Handler() */	
 	
 	int 	i = 0;
 	char	ACP_T_TEMP
@@ -626,7 +624,7 @@ void ACP_Tx_PhyLayer(){
 		EA = 1;									// Resume all interrupt
 	}
 	ACP_485Tx = 0;
-	Comm.ACP_Tx_Busy_Flg = 0;				
+	Comm.Flag.ACP_Tx_Busy_Flg = 0;				
 	/* For ACP_Tx_Handler(), to allow transmit again over IOSerial */
 		
 }
@@ -681,7 +679,7 @@ void ACP_Rx() interrupt 2 {
 				
 				ACP_R_TEMP=0;
 				ACP_In_Buf_Index = 0;			// Reset UART_Inbuf_Index
-				Comm.ACP_Rx_Ready_Flg = 1; 		// For ACP_StateEvent()
+				Comm.Flag.ACP_Rx_Ready_Flg = 1; 		// For ACP_StateEvent()
 			}
 		}
 	} else {
@@ -689,7 +687,7 @@ void ACP_Rx() interrupt 2 {
 	
 		ACP_R_TEMP=0;
 		ACP_In_Buf_Index = 0;					// Reset UART_Inbuf_Index
-		Comm.ACP_Rx_Ready_Flg = 0; 				// 
+		Comm.Flag.ACP_Rx_Ready_Flg = 0; 				// 
 	}
 	
 	EA = 1;										// Resume all interrupt
@@ -730,15 +728,15 @@ void ADC_Init(){
 		ADC_SCLK_Pin = 1	
 	}
 	ADC_CS_Pin = 1;
-	Comm.ADC_Rd_Busy_Flg = 0;
+	Comm.Flag.ADC_Rd_Busy_Flg = 0;
 }
 
 float ADC_Rd(){									// n=10 or 12, n bits convert resolution
 	int i;
 	float CovertedVolt = 0;
 	
-	if (!(Comm.ADC_Rd_Busy_Flg)) {
-		Comm.ADC_Rd_Busy_Flg = 1;
+	if (!(Comm.Flag.ADC_Rd_Busy_Flg)) {
+		Comm.Flag.ADC_Rd_Busy_Flg = 1;
 		ADC_DO_Pin = 1;
 		ADC_CS_Pin = 1;
 		ADC_SCLK_Pin = 0;
@@ -755,7 +753,7 @@ float ADC_Rd(){									// n=10 or 12, n bits convert resolution
 		}
 	
 		ConvertedVolt = ConvertedVolt * 5 / (2 ^ 10 - 1);
-		Comm.ADC_Rd_Busy_Flg = 0;
+		Comm.Flag.ADC_Rd_Busy_Flg = 0;
 		return CovertedVolt;
 	}
 	else {
@@ -832,16 +830,16 @@ Main(){
 
 	while(1){
 	
-		if(Main.WD_Rst_Flg){					// Set by IIMER0_10mS() interrupt 1
-			Main.WD_Rst_Flg = 0					// Clear flag
+		if(Main.Flag.WD_Rst_Flg){					// Set by IIMER0_10mS() interrupt 1
+			Main.Flag.WD_Rst_Flg = 0					// Clear flag
 			Watchdog();							// Implement Reset watchdog
 		}	
-		if(Main.Card_Det_Flg){					// Set by IIMER0_10mS() interrupt 1
-			Main.Card_Det_Flg = 0;				// Clear flag
-			Main.Card_Exist_Flg = Card_Det_Pin ;// Reading Key exist status
+		if(Main.Flag.Card_Det_Flg){					// Set by IIMER0_10mS() interrupt 1
+			Main.Flag.Card_Det_Flg = 0;				// Clear flag
+			Main.Flag.Card_Exist_Flg = Card_Det_Pin ;// Reading Key exist status
 		}	
-		if(Main.Temp_Rd_Flg){					// Set by IIMER0_10mS() interrupt 1
-			Main.Temp_Rd_Flg = 0;				// Clear flag
+		if(Main.Flag.Temp_Rd_Flg){					// Set by IIMER0_10mS() interrupt 1
+			Main.Flag.Temp_Rd_Flg = 0;				// Clear flag
 			Temperature_Reality = ADC_Rd();		// Implement ADC reading
 		}
 
@@ -865,7 +863,7 @@ void PC_StateEvent(){
 	bool 	Resp;
 	
 
-	if(Comm.PC_Rx_Ready_Flg){
+	if(Comm.Flag.PC_Rx_Ready_Flg){
 		/* strstr(string1,string2)
 		   This function returns a position points to the first character of the 
 		   found s2 in s1, otherwise a null pointer.
@@ -907,7 +905,7 @@ void PC_StateEvent(){
 		}
 		/* ACUD_ID_Dec is not match */
 		PC_In_Buf[PC_In_Buf_Max] = {0};	
-		Comm.PC_Rx_Ready_Flg = 0
+		Comm.Flag.PC_Rx_Ready_Flg = 0
 	}
 }
 
@@ -924,13 +922,13 @@ PC_C_Event_Reply(chat* Cmd){
 	if(Resp == 1){
 	/* anknowledge back to PC successful */
 		PC_In_Buf[PC_In_Buf_Max] = {0};	
-		Comm.PC_Rx_Ready_Flg = 0;
+		Comm.Flag.PC_Rx_Ready_Flg = 0;
 	}		
 	else {
 		/* anknowledge back to PC failure */	
 		/* Ignore this failure. assuming command will be 
 		   resend again by PC site */
-		Comm.PC_Rx_Ready_Flg = 0;
+		Comm.Flag.PC_Rx_Ready_Flg = 0;
 
 }
 
@@ -945,7 +943,7 @@ void ACP_StateEvent(){
 	bool 	resp
 	
 
-	if(Comm.ACP_Rx_Ready_Flg){				
+	if(Comm.Flag.ACP_Rx_Ready_Flg){				
 		
 		if (Strcpm(ACP_In_Buf,"command string 1") = 0) {
 			/* "Enter" was included in ACP_In_Buf  */
@@ -966,10 +964,10 @@ void ACP_StateEvent(){
 			if (Resp == 1)
 			/* anknowledge back to ACP successful */
 				ACP_In_Buf[ACP_In_Buf_Max] = {0};	
-				Comm.ACP_Rx_Ready_Flg = 0
+				Comm.Flag.ACP_Rx_Ready_Flg = 0
 			else {
 			/* anknowledge back to ACP failure */	
-				Comm.ACP_Rx_Ready_Flg = 0;
+				Comm.Flag.ACP_Rx_Ready_Flg = 0;
 				/* Ignore this failure. assuming command will be resend again by PC site */
 			
 			}
@@ -984,12 +982,12 @@ void ACP_StateEvent(){
 void Air_Manipulate(){
 	
 	
-	if(Card_Exist_Flg){
+	if(Main.Flag.Card_Exist_Flg){
 	/* Card_In_Flg will be handled in IIMER0_NmS() interrupt 1 */
 	
 	/* Card present */	
 		
-		if(Main.Air_Auto_Flg){
+		if(Main.Flag.Air_Auto_Flg){
 		/* Performing Auto Mode */
 			Air_Auto_Control();
 	
@@ -1093,7 +1091,7 @@ float Temperature_delta
 
 Air_Menual_Control(){
 	
-	if (Main.Air_Cool_Flg ) {
+	if (Main.Flag.Air_Cool_Flg ) {
 	/* Cooler */
 		Air_Heater_Pin = 0;							// Turn Herter off
 		if( Temperature_Reality > Temperature_Setting ){
