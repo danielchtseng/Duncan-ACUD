@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W085  H1510
+// Ver : W085  H1550
 
 // on going: 
 
@@ -619,7 +619,7 @@ int ACP_Tx_Handler(int *Indiv_To_ACP_Ptr){		// Pointer of individual data array(
 void ACP_Rx() interrupt 2 {			
 /* EX1 INT, vector=0013h, UART Simulator */
 	
-	char ACP_R_TEMP;								// Same as UART Rx SBUF
+	char ACP_R_TEMP;							// Same as UART Rx SBUF
 
 	// Tx no need to using interrupt. 
 	// sbit ACP_RxD0 	= P3^7;					// RD
@@ -634,10 +634,10 @@ void ACP_Rx() interrupt 2 {
 	
 	
 	uS_Delay(52);
-	int i;
-	if (!ACP_RxD0 == 0){ 					// Start bit "0"
 
-		for (i=0;i<8,i++){
+	if (ACP_RxD0 == 0){ 						// Expecting start bit "0" 
+		int i;
+		for (i=0;i<8;i++){
 			uS_Delay(104);
 			
 			if (ACP_RxD0 == 1){
@@ -816,68 +816,6 @@ void System_Init(){
 	
 }
 
-
-
-// ##### Main Program #####
-Main(){
-
-	IE=0x00;									// Set all interrupt disable
-	
-	/* Initialization manipulate */
-	System_Init();	
-		
-	/* Interrupt Priority: 	IP		// Put this function being as last function 
-	| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 	
-	| RSV  | RSV  |	PT2	 | PS	| PT1  | PX1  | PT0	 | PX0  |
-	RSV	Reserve
-	RSV	Reserve
-	PT2	Timer2 
-	PS	Serial
-	PT1	Timer1 
-	PX1	External 1 
-	PT0	Timer0 
-	PX0	External 0 */
-	IP=0x00;									// Default priority
-							
-	/* Interrupt Enable: 	IE
-	| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
-	|  EA  | RSV  |	ET2  |	ES	| ET1  | EX1  |	ET0	 | EX0  |
-	EA	Enable
-	RSV	Reserve
-	ET2	Timer 2 
-	ES	Serial 
-	ET1	Timer 1
-	EX1	Ecternal 1
-	ET0	Timer 0
-	EX0	External 0	*/
-	ES=1;										// IE.ES,  Enable Serial Interrupt, UART comm. with PC
-	ET0=1;										// IE.ET0, Enable Timer0 Interrupt, 10ms period
-	EX1=1;										// IE.EX1, Enable Ext 1 Interrupt, Serial comm. with ACP
-	EA=1;										// IE.EA,  Enable all interrupt							
-
-	while(1){
-	
-		if(ACUD.WD_Rst_Flg){					// Set by IIMER0_10mS() interrupt 1
-			ACUD.WD_Rst_Flg = 0					// Clear flag
-			Watchdog();							// Implement Reset watchdog
-		}	
-		if(ACUD.Card_Det_Flg){					// Set by IIMER0_10mS() interrupt 1
-			ACUD.Card_Det_Flg = 0;				// Clear flag
-			ACUD.Card_Exist_Flg = Card_Det_Pin;	// Reading Key exist status
-		}	
-		if(ACUD.Temp_Rd_Flg){					// Set by IIMER0_10mS() interrupt 1
-			ACUD.Temp_Rd_Flg = 0;				// Clear flag
-			Temperature_Reality = ADC_Rd();		// Implement ADC reading
-		}
-
-	
-		PC_StateEvent();
-		ACP_StateEvent();
-		ACUD_StateEvent();
-		Air_Manipulate();						// depend on the command in Fan_Status 
-		
-	}
-}
 
 
 // ##### Event manipulate 
@@ -1171,3 +1109,64 @@ Air_Menual_Control(){
 }
 
 
+
+// ##### Main Program #####
+Main(){
+
+	IE=0x00;									// Set all interrupt disable
+	
+	/* Initialization manipulate */
+	System_Init();	
+		
+	/* Interrupt Priority: 	IP		// Put this function being as last function 
+	| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 	
+	| RSV  | RSV  |	PT2	 | PS	| PT1  | PX1  | PT0	 | PX0  |
+	RSV	Reserve
+	RSV	Reserve
+	PT2	Timer2 
+	PS	Serial
+	PT1	Timer1 
+	PX1	External 1 
+	PT0	Timer0 
+	PX0	External 0 */
+	IP=0x00;									// Default priority
+							
+	/* Interrupt Enable: 	IE
+	| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
+	|  EA  | RSV  |	ET2  |	ES	| ET1  | EX1  |	ET0	 | EX0  |
+	EA	Enable
+	RSV	Reserve
+	ET2	Timer 2 
+	ES	Serial 
+	ET1	Timer 1
+	EX1	Ecternal 1
+	ET0	Timer 0
+	EX0	External 0	*/
+	ES=1;										// IE.ES,  Enable Serial Interrupt, UART comm. with PC
+	ET0=1;										// IE.ET0, Enable Timer0 Interrupt, 10ms period
+	EX1=1;										// IE.EX1, Enable Ext 1 Interrupt, Serial comm. with ACP
+	EA=1;										// IE.EA,  Enable all interrupt							
+
+	while(1){
+	
+		if(ACUD.WD_Rst_Flg){					// Set by IIMER0_10mS() interrupt 1
+			ACUD.WD_Rst_Flg = 0	;				// Clear flag
+			Watchdog();							// Implement Reset watchdog
+		}	
+		if(ACUD.Card_Det_Flg){					// Set by IIMER0_10mS() interrupt 1
+			ACUD.Card_Det_Flg = 0;				// Clear flag
+			ACUD.Card_Exist_Flg = Card_Det_Pin;	// Reading Key exist status
+		}	
+		if(ACUD.Temp_Rd_Flg){					// Set by IIMER0_10mS() interrupt 1
+			ACUD.Temp_Rd_Flg = 0;				// Clear flag
+			Temperature_Reality = ADC_Rd();		// Implement ADC reading
+		}
+
+	
+		PC_StateEvent();
+		ACP_StateEvent();
+		ACUD_StateEvent();
+		Air_Manipulate();						// depend on the command in Fan_Status 
+		
+	}
+}
