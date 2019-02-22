@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W085  H1030
+// Ver : W085  H1045
 // on going: 
 
 
@@ -145,8 +145,8 @@ unsigned short 	Ten_mS_Counter;					// 2 bytes: 0-65535
 
 
 /* Declare related to UART */
-//#define Fosc				22.1184			// ***** Need to be confirmed (0r 11.0592 )
-//#define Baudrate			9600			// ***** Need to be confirmed
+#define Fosc				22.1184			// ***** Need to be confirmed (0r 11.0592 )
+#define Baudrate			9600			// ***** Need to be confirmed
 #define PC_In_Buf_Max 		5				// ***** Need to be confirmed
 #define PC_Out_Buf_Max		5				// ***** Need to be confirmed
 #define Enter				0x13			// ASCII 13: carry Return
@@ -328,8 +328,8 @@ void uS_Delay (int N){							// Delay N*us, 52us or 104us
 
 
 // ##### PC Communication
-void PC_UART_Init(float Fosc ,unsigned short Baudrate){		// Include T1 init
-	
+// void PC_UART_Init(float Fosc ,unsigned short Baudrate){		// Include T1 init
+void PC_UART_Init(){	
 	/* Special Function Registers Related to UART: 
 		SCON		Serial Control Register
 		TCON		Timer Control Register for Baud Rate Generator
@@ -788,7 +788,8 @@ void System_Init(){
 	
 	/* P3(ACP) In/Out initial */
 	
-	PC_UART_Init(22.1184,9600);
+	// PC_UART_Init(22.1184,9600);
+	PC_UART_Init();
 	TIMER0_mS_Init(10);							// Timer0 10ms 
 	ACP_Init();
 	ADC_Init();
