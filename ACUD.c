@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W085  H1003
+// Ver : W085  H1030
 // on going: 
 
 
@@ -152,7 +152,7 @@ unsigned short 	Ten_mS_Counter;					// 2 bytes: 0-65535
 #define Enter				0x13			// ASCII 13: carry Return
 
 int 	PC_In_Buf_Index;
-int 	PC_Out_buf_Index;
+int 	PC_Out_Buf_Index;
 char 	PC_In_Buf[PC_In_Buf_Max];
 char 	PC_Out_Buf[PC_Out_Buf_Max];
 
@@ -224,7 +224,7 @@ sbit 	Card_Det_Pin  	= P0^5;					// Card detection
 		unsigned char Air_Auto_Flg 			: 1; 	// 1: Auto mode, decide by ACP	
 		unsigned char Card_Det_Flg 			: 1;	// Card detect request	
 		unsigned char Temp_Rd_Flg			: 1;	// Temperautre reading request
-		unsigned char WD_Rst_Flg				: 1;	// WatchDog reset request
+		unsigned char WD_Rst_Flg			: 1;	// WatchDog reset request
 		unsigned 						: 1;
 	}Main;
 //* } Main;
@@ -256,7 +256,7 @@ void TIMER0_Ten_mS_Init(int N){					// 10*mS timer
 	TMOD &= 0xF0;								// Clear Timer 0 
 	TMOD |= 0x01; 								// Mode 1, 16 bit timer/count mode	
 	TH0 = (65536-(N*1000/(Fosc*1000000/12)))/256;
-	TL0 = (65536-(N*1000/(Fosc*1000000/12))%256;
+	TL0 = (65536-(N*1000/(Fosc*1000000/12)))%256;
 	/* The content of TH0 & TL0 is designed to meet 1ms 
 	TR0=1;;										// TCON.TR0=1, Timer 0 start running
 	/* TCON: Related to Timer:
@@ -288,15 +288,16 @@ void TIMER0_Ten_mS() interrupt 1 {				// Timer0 INT vector=000Bh
 	Ten_mS_Counter++;
 
 	
-	if(Ten_mS_Counter % 10 == 0){					// 100mS(10mS*10) period
-		Main.Card_Det_Flg = 1;
-		Main.WD_Res_Flg = 1;		
+	if(Ten_mS_Counter % 10 == 0){				// 100mS(10mS*10) period
+		Main.Card_Det_Flg = 1;					// Room Card detect
+		Main.WD_Rst_Flg = 1;					// WatchDog reset
 	}
 	if(Ten_mS_Counter % 100 == 0){				// 1 Second(10mS*100) period
 
-		Main.Temp_Rd_Flg = 1;
+		Main.Temp_Rd_Flg = 1;					// Room Temperature detect
 	}
 	if(Ten_mS_Counter == 6000){					// 1 Minute
+	
 		Ten_mS_Counter= 0;						// Reset 10mS_Counter
 
 	}
@@ -521,8 +522,8 @@ void ACP_Init(){
 	/* EX1 will be enabled in main() */
 }
 
-int ACP_Tx_Handler(int *2ACP_Indiv_Ptr){		// Pointer of individual data array(2ACP_Indiv[])
-	/* Data in 2ACP_Indiv[] including "Enter" as tail */
+int ACP_Tx_Handler(int *Indiv_To_ACP_Ptr){		// Pointer of individual data array(Indiv_To_ACP[])
+	/* Data in Indiv_To_ACP[] including "Enter" as tail */
 	
 	// sbit ACP_RxD0 	= P3^7;					// RD
 	// sbit ACP_TxD0	= P3^6;					// WR
@@ -533,17 +534,17 @@ int ACP_Tx_Handler(int *2ACP_Indiv_Ptr){		// Pointer of individual data array(2A
 	char ACP_T_TEMP;
 	
 	if(!(Comm.ACP_Tx_Busy_Flg)){				// IOSerial Tx avilable
-	/* Got the right to allow data in 2ACP_Indiv[] port to ACP_Out_Buf[] */	
+	/* Got the right to allow data in Indiv_To_ACP[] port to ACP_Out_Buf[] */	
 		
 		Comm.ACP_Tx_Busy_Flg = 1; 				// clear by ACP_Tx()
 		
-		ACP_T_TEMP=*2ACP_Indiv_Ptr;
+		ACP_T_TEMP=*Indiv_To_ACP_Ptr;
 		while(ACP_T_TEMP != Enter) {
-			ACP_Out_Buf[i]=*2ACP_Indiv_Ptr;
+			ACP_Out_Buf[i]=*Indiv_To_ACP_Ptr;
 			i++;
-			2ACP_Indiv_Ptr++;
+			Indiv_To_ACP_Ptr++;
 		}
-		ACP_Out_Buf[i]=*2ACP_Indiv_Ptr;			// Put "Enter" into ACP_Out_Buf[]
+		ACP_Out_Buf[i]=*Indiv_To_ACP_Ptr;			// Put "Enter" into ACP_Out_Buf[]
 		
 		ACP_Out_Buf_Index = 0;					// Initial PC_Out_Buf_Index
 		ACP_Tx_PhyLayer();						// Call ACP_Tx_PhyLayer() to transmit data via ACP
@@ -944,7 +945,7 @@ PC_C_Event_Reply(chat* Cmd){
 /* ACP Event manipulate */
 void ACP_StateEvent(){
 
-	char 	2ACP_Indiv[5]								// Individual data array to ACP	
+	char 	Indiv_To_ACP_[5]								// Individual data array to ACP	
 	/* Using array to instead of pointer to reserve memory firmdly, when implementing strcpy(), strcat() */
 	bool 	resp
 	
@@ -966,7 +967,7 @@ void ACP_StateEvent(){
 		/* Reply acknowledge back to ACP */
 		
 		
-			Resp = ACP_Tx_Handler(&2ACP_Indiv)
+			Resp = ACP_Tx_Handler(&Indiv_To_ACP)
 			if (Resp == 1)
 			/* anknowledge back to ACP successful */
 				ACP_In_Buf[ACP_In_Buf_Max] = {0};	
