@@ -2,17 +2,23 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W085  H1550
+// Ver : W085  H2135
 
 // on going: 
+
+
+// @@@@@@@@@@ include @@@@@@@@@@
+
+
+#include <AT89X51.h>
+#include <string.h>
+#include <math.h>
+
 
 
 
 // @@@@@@@@@@ Declare @@@@@@@@@@
 
-#include <AT89X51.h>
-#include <string.h>
-#include <math.h>
 
 /* Keil C Data types
 Data Types				Bits	Bytes	Value Range
@@ -445,13 +451,13 @@ void PC_UART_Init(){
 
 }
 
-int PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){			// Pointer of individual data array (2PC_Indiv[])
-		/* Data in 2PC_Indiv[] including "Enter" as tail */
+int PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){			// Pointer of individual data array (Indiv_To_PC[])
+		/* Data in Indiv_To_PC[] including "Enter" as tail */
 	int i = 0;
 	char PC_TBUF;
 	
 	if(!(Comm.PC_Tx_Busy_Flg)){				    // PC Tx avilable
-	/* Got the rigth to allow data in 2PC_Indiv[] port to PC_Out_Buf[] */
+	/* Got the rigth to allow data in Indiv_To_PC[] port to PC_Out_Buf[] */
 	
 		Comm.PC_Tx_Busy_Flg = 1; 				// clear by PC_UART_RxTx() interrupt 4
 
@@ -469,7 +475,7 @@ int PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){			// Pointer of individual data array (
 		return 1;								// data transmit permit
 	}
 	else {
-	/*  2PC_Indiv[] does not to port to PC_Out_Buf[] */	
+	/*  Indiv_To_PC[] does not to port to PC_Out_Buf[] */	
 	
 	
 		return 0;								// data transmit deny
@@ -822,8 +828,9 @@ void System_Init(){
 /* PC Event manipulate */
 void PC_StateEvent(){
 	
-	char *Command_String;
-	char	2PC_Indiv[5];						// Individual data array to PC					
+	char *Command_String;						// pointer
+	
+	char	Indiv_To_PC[5];						// Individual data array to PC					
 	/* Using array to instead of pointer to reserve memory firmdly, when implementing strcpy(), strcat() */
 	bool 	Resp;
 	
@@ -839,31 +846,102 @@ void PC_StateEvent(){
 		/* "Enter" character not including in PC_In_Buf[] */
 			
 		
-			if(strstr(PC_In_Buf,"C"){			// "Command type" form PC
+			if(strstr(PC_In_Buf,"C")){			// "Command type" form PC
 				
 				Command_String = strstr(PC_In_Buf,ACUD_ID_Dec); 
 				Command_String += 3 ;			// point to start position of Cmd
 
-				if(strstr(PC_In_Buf,Command_String) {		// Check In
-					
-					
+				if(strstr(Command_String,"CI")) {		// Check In
 					
 					/* perform properly reaction */
+						
+					PC_C_Event_Reply(Command_String);	
+					/* Reply same Cmd to PC which received from PC*/
+				}
+				if(strstr(Command_String,"MO")) {		// Check In
 					
+					/* perform properly reaction */
+						
+					PC_C_Event_Reply(Command_String);	
+					/* Reply same Cmd to PC which received from PC*/
+				}
+				if(strstr(Command_String,"CO")) {		// Check In
 					
-					
-					
+					/* perform properly reaction */
+						
 					
 					PC_C_Event_Reply(Command_String);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
+				if(strstr(Command_String,"CC")) {		// Check In
+					
+					/* perform properly reaction */
+						
+					PC_C_Event_Reply(Command_String);	
+					/* Reply same Cmd to PC which received from PC*/
+				}
+				if(strstr(Command_String,"AC")) {		// Check In
+					
+					/* nothing reaction */	
+					
+					PC_C_Event_Reply(Command_String);	
+					/* Reply same Cmd to PC which received from PC*/
+				}
+				if(strstr(Command_String,"AH")) {		// Check In
+					
+					/* nothing reaction */	
+					
+					PC_C_Event_Reply(Command_String);	
+					/* Reply same Cmd to PC which received from PC*/
+				}
+				if(strstr(Command_String,"ST")) {		// Check In
+					
+					Command_String += 2;				// point to start position of content
+					
+					/* perform properly reaction */
+						
+					PC_C_Event_Reply(Command_String);	
+					/* Reply same Cmd to PC which received from PC*/
+				}
+				if(strstr(Command_String,"IT")) {		// Check In
+					
+					Command_String += 2;				// point to start position of content					
+					/* perform properly reaction */
+						
+					PC_C_Event_Reply(Command_String);	
+					/* Reply same Cmd to PC which received from PC*/
+				}
+				if(strstr(Command_String,"OT")) {		// Check In
+					
+					Command_String += 2;				// point to start position of content
+					/* perform properly reaction */
+					
+					PC_C_Event_Reply(Command_String);	
+					/* Reply same Cmd to PC which received from PC*/
+				}
+				if(strstr(Command_String,"RU")) {		// Check In
+					
+					Command_String += 2;				// point to start position of content
+					/* perform properly reaction */
+						
+					PC_C_Event_Reply(Command_String);	
+					/* Reply same Cmd to PC which received from PC*/
+				}
+				
+				
+				
 
 			else if ( findstr(PC_In_Buf,"D")){	// "Confirm type" form PC
 			
+				if(strstr(PC_In_Buf,Command_String) {		// Check In
+					
+					
+					
+					/* perform properly reaction */			
 			
 			
-			
-			
+					PC_D_Event_Reply(Command_String);	
+					/* Reply same Cmd to PC which received from PC*/
 			
 
 			}
@@ -877,13 +955,13 @@ void PC_StateEvent(){
 PC_C_Event_Reply(chat* Cmd){
 
 /* Reply back to PC */
-	strcopy(2PC_Indiv,"A");
-	strcat(2PC_Indiv,ACUD_ID_Dec);
-	strcat(2PC_Indiv,Cmd);					
-	strcat(2PC_Indiv,Enter);
+	strcopy(Indiv_To_PC,"A");
+	strcat(Indiv_To_PC,ACUD_ID_Dec);
+	strcat(Indiv_To_PC,Cmd);					
+	strcat(Indiv_To_PC,Enter);
 	/* "Enter" need to be included */
 				
-	Resp = PC_Tx_Handler(&2PC_Indiv)
+	Resp = PC_Tx_Handler(&Indiv_To_PC);
 	if(Resp == 1){
 	/* anknowledge back to PC successful */
 		PC_In_Buf[PC_In_Buf_Max] = {0};	
@@ -891,6 +969,7 @@ PC_C_Event_Reply(chat* Cmd){
 	}		
 	else {
 		/* anknowledge back to PC failure */	
+		
 		/* Ignore this failure. assuming command will be 
 		   resend again by PC site */
 		Comm.PC_Rx_Ready_Flg = 0;
