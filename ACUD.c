@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W085  H2135
+// Ver : W086  H0920
 
 // on going: 
 
@@ -13,7 +13,7 @@
 #include <AT89X51.h>
 #include <string.h>
 #include <math.h>
-
+#include <stdbool.h>
 
 
 
@@ -747,7 +747,7 @@ float ADC_Rd(){									// n=10 or 12, n bits convert resolution
 	
 		ConvertedVolt = ConvertedVolt * 5 / (2 ^ 10 - 1);
 		Comm.ADC_Rd_Busy_Flg = 0;
-		return CovertedVolt;
+		return ConvertedVolt;
 	}
 	else {
 		
@@ -772,12 +772,13 @@ int Hex2Dec(int x){
 // ##### ACUD
 void ACUD_Init(){
 	
-	int Hex;
+	// int Hex;
 	
 	P2 = 0xFF;
-	Hex = P2;								// Reading DIP switch
+	// Hex = P2;								// Reading DIP switch
 
-	ACUD_ID_Dec = Hex2Dec(Hex);	
+	// ACUD_ID_Dec = Hex2Dec(Hex);	
+	ACUD_ID_Dec = P2;	
 	
 }
 
@@ -832,7 +833,6 @@ void PC_StateEvent(){
 	
 	char	Indiv_To_PC[5];						// Individual data array to PC					
 	/* Using array to instead of pointer to reserve memory firmdly, when implementing strcpy(), strcat() */
-	bool 	Resp;
 	
 
 	if(Comm.PC_Rx_Ready_Flg){
@@ -953,7 +953,7 @@ void PC_StateEvent(){
 }
 
 PC_C_Event_Reply(chat* Cmd){
-
+	bool 	Resp;
 /* Reply back to PC */
 	strcopy(Indiv_To_PC,"A");
 	strcat(Indiv_To_PC,ACUD_ID_Dec);
