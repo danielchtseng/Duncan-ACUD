@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W086  H0920
+// Ver : W086  H1500
 
 // on going: 
 
@@ -206,7 +206,7 @@ int     ADC_Data;
 #define Checkin_Defa_Temp	23
 #define Auto_Temperature	23
 #define Auto_Defa_Period	10					// Default period
-int		ACUD_ID_Dec;
+int		ACUD_ID;
 float 	Temperature_Setting;
 float	Temperature_Reality;
 int		Checkout_Air_Period;					// 10-60min in an hour
@@ -767,8 +767,14 @@ int Hex2Dec(int x){
       return Dec;
 }
 
-
-
+int *Int2Str(int x){
+	int str[3];
+	int* Ptr;
+	str[0] = x/100+48			// Hunderd digit
+	str[1] = (x/10)%10+48			// Ten digit
+	str[2] = x%10+48			// digit
+	return Ptr
+}
 // ##### ACUD
 void ACUD_Init(){
 	
@@ -778,7 +784,7 @@ void ACUD_Init(){
 	// Hex = P2;								// Reading DIP switch
 
 	// ACUD_ID_Dec = Hex2Dec(Hex);	
-	ACUD_ID_Dec = P2;	
+	ACUD_ID = P2;	
 	
 }
 
@@ -829,8 +835,10 @@ void System_Init(){
 /* PC Event manipulate */
 void PC_StateEvent(){
 	
-	char *Command_String;						// pointer
-	
+	int 	ACUD_ID_Str;
+	int     *ACUD_ID_Ptr					// Point to ID start position
+	char 	*Command_Ptr;					// point to Command start position
+	int		*Tempe_Ptr						// Point to temperature start position
 	char	Indiv_To_PC[5];						// Individual data array to PC					
 	/* Using array to instead of pointer to reserve memory firmdly, when implementing strcpy(), strcat() */
 	
@@ -842,27 +850,32 @@ void PC_StateEvent(){
 		   if s2 is not present in s1, s1 is returned. 
 		*/		
 		
-		if(strstr(PC_In_Buf,ACUD_ID_Dec)){		// String_Temp does occurre in PC_In_Buf 
+		ACUD_ID_String = Int2Str(ACUD_ID);
+		
+		if(strstr(PC_In_Buf,ACUD_ID_Str)){		// String_Temp does occurre in PC_In_Buf 
 		/* "Enter" character not including in PC_In_Buf[] */
 			
 		
 			if(strstr(PC_In_Buf,"C")){			// "Command type" form PC
 				
-				Command_String = strstr(PC_In_Buf,ACUD_ID_Dec); 
-				Command_String += 3 ;			// point to start position of Cmd
+				ACUD_ID_Ptr = strstr(PC_In_Buf,ACUD_ID); 
+				Command_Ptr = ACUD_ID_Ptr+3 ;			// point to start position of Cmd
+
+				
+				/* 
 
 				if(strstr(Command_String,"CI")) {		// Check In
 					
 					/* perform properly reaction */
 						
-					PC_C_Event_Reply(Command_String);	
+					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
 				if(strstr(Command_String,"MO")) {		// Check In
 					
 					/* perform properly reaction */
 						
-					PC_C_Event_Reply(Command_String);	
+					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
 				if(strstr(Command_String,"CO")) {		// Check In
@@ -870,14 +883,14 @@ void PC_StateEvent(){
 					/* perform properly reaction */
 						
 					
-					PC_C_Event_Reply(Command_String);	
+					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
 				if(strstr(Command_String,"CC")) {		// Check In
 					
 					/* perform properly reaction */
 						
-					PC_C_Event_Reply(Command_String);	
+					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
 				if(strstr(Command_String,"AC")) {		// Check In
@@ -891,7 +904,7 @@ void PC_StateEvent(){
 					
 					/* nothing reaction */	
 					
-					PC_C_Event_Reply(Command_String);	
+					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
 				if(strstr(Command_String,"ST")) {		// Check In
@@ -900,7 +913,7 @@ void PC_StateEvent(){
 					
 					/* perform properly reaction */
 						
-					PC_C_Event_Reply(Command_String);	
+					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
 				if(strstr(Command_String,"IT")) {		// Check In
@@ -908,7 +921,7 @@ void PC_StateEvent(){
 					Command_String += 2;				// point to start position of content					
 					/* perform properly reaction */
 						
-					PC_C_Event_Reply(Command_String);	
+					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
 				if(strstr(Command_String,"OT")) {		// Check In
@@ -916,7 +929,7 @@ void PC_StateEvent(){
 					Command_String += 2;				// point to start position of content
 					/* perform properly reaction */
 					
-					PC_C_Event_Reply(Command_String);	
+					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
 				if(strstr(Command_String,"RU")) {		// Check In
@@ -924,7 +937,7 @@ void PC_StateEvent(){
 					Command_String += 2;				// point to start position of content
 					/* perform properly reaction */
 						
-					PC_C_Event_Reply(Command_String);	
+					PC_C_Event_Reply(Command_ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
 				
@@ -933,14 +946,14 @@ void PC_StateEvent(){
 
 			else if ( findstr(PC_In_Buf,"D")){	// "Confirm type" form PC
 			
-				if(strstr(PC_In_Buf,Command_String) {		// Check In
+				if(strstr(PC_In_Buf,Command_Ptr) {		// Check In
 					
 					
 					
 					/* perform properly reaction */			
 			
 			
-					PC_D_Event_Reply(Command_String);	
+					PC_D_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 			
 
