@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W087  H1600
+// Ver : W087  H1610
 
 // on going: 
 
@@ -771,8 +771,6 @@ int Hex2Dec(int x){
       return Dec;
 }
 
-
-
 int *Int2Str(int i){
 	int str[3];
 	int* Ptr;
@@ -784,16 +782,10 @@ int *Int2Str(int i){
 
 int Str2Int(int *Str){
 
-int	Dec_Ten_Digit;
-int Dec_Digit;
-int Hex;
-
-	Dec_Ten_Digit = *Str;
-	Dec_Digit = *(Str+1);
-	Dec_Ten_Digit/16;
 
 
-	return ;
+
+	return i;
 
 }
 
