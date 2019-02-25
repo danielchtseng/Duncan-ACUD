@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W091  H1500
+// Ver : W091  H1630
 
 // on going: 
 
@@ -766,16 +766,24 @@ float ADC_Rd(){									// n=10 or 12, n bits convert resolution
 
 // ##### ACUD
 
-int Hex2Dec(int x){
+int Hex2Dec(int H){
       int Dec, remainder, count = 0;
 	  int decimal_number;
-      while(x > 0){
-            remainder = x % 10;
+      while(H > 0){
+            remainder = H % 10;
             decimal_number = Dec + remainder * pow(16, count);
-            x = x / 10;
+            H = H / 10;
             count++;
       }
       return Dec;
+}
+
+
+int Dec2Hex( int D){
+
+
+
+
 }
 
 int *HexInt2ASCIIStr(int i){
@@ -896,72 +904,82 @@ void PC_StateEvent(){
 				
 				
 
-				if(strstr(Command_Ptr,"CI")) {		// Check In
+				if(strstr(Command_Ptr,"CI")) {				// Check In, Turn On Cooler
 					
 					/* perform properly reaction */
+					ACUD.Air_Auto_Flg = 0;
+					Temperature_Setting = Dec2Hex(Default);	// Default=23			
 						
 					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
-				if(strstr(Command_Ptr,"MO")) {		// Check In
+				if(strstr(Command_Ptr,"MO")) {				// Check out
 					
 					/* perform properly reaction */
+					ACUD.Air_Auto_Flg = 0;
 						
 					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
-				if(strstr(Command_Ptr,"CO")) {		// Check In
+				if(strstr(Command_Ptr,"CO")) {				// Trun On Cooler
 					
 					/* perform properly reaction */
+					ACUD.Air_Auto_Flg = 0;
+					Temperature_Setting = Dec2Hex(Default);	// Default=23							
+					
+					PC_C_Event_Reply(Command_Ptr);	
+					/* Reply same Cmd to PC which received from PC*/
+				}
+				if(strstr(Command_Ptr,"CC")) {				// Turn Off Cooler
+					
+					/* perform properly reaction */
+					ACUD.Air_Auto_Flg = 0;
 						
+					PC_C_Event_Reply(Command_Ptr);	
+					/* Reply same Cmd to PC which received from PC*/
+				}
+				if(strstr(Command_Ptr,"AC")) {				// Become Cooler mode
+					
+					/* perform properly reaction */	
+					ACUD.Air_Auto_Flg = 0;
 					
 					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
-				if(strstr(Command_Ptr,"CC")) {		// Check In
+				if(strstr(Command_Ptr,"AH")) {				// Become Heater mode
 					
 					/* perform properly reaction */
-						
-					PC_C_Event_Reply(Command_Ptr);	
-					/* Reply same Cmd to PC which received from PC*/
-				}
-				if(strstr(Command_Ptr,"AC")) {		// Check In
-					
-					/* nothing reaction */	
+					ACUD.Air_Auto_Flg = 0;
 					
 					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
-				if(strstr(Command_Ptr,"AH")) {		// Check In
+				if(strstr(Command_Ptr,"ST")) {				// ST Temperature setting
 					
-					/* nothing reaction */	
-					
-					PC_C_Event_Reply(Command_Ptr);	
-					/* Reply same Cmd to PC which received from PC*/
-				}
-				if(strstr(Command_Ptr,"ST")) {		// Check In
-					
-					Tempe_Ptr = Command_String + 2;	// point to start position of Temperature
+					Tempe_Ptr = Command_String + 2;			// point to start position of Temperature
 					
 					/* perform properly reaction */
+					ACUD.Air_Auto_Flg = 0;
 					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);	
 						
 					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
-				if(strstr(Command_Ptr,"IT")) {		// Check In
+				if(strstr(Command_Ptr,"IT")) {				// Key In Temperature setting
 					
-					Tempe_Ptr = Command_String + 2;	// point to start position of Temperature					
+					Tempe_Ptr = Command_String + 2;			// point to start position of Temperature					
 					/* perform properly reaction */
+					ACUD.Air_Auto_Flg = 0;
 					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);
 						
 					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
-				if(strstr(Command_Ptr,"OT")) {		// Check In
-					
-					Tempe_Ptr = Command_String + 2; // point to start position of Temperature
+				if(strstr(Command_Ptr,"OT")) {				// Key Out Temperature setting
+				
+					Tempe_Ptr = Command_String + 2; 		// point to start position of Temperature
 					/* perform properly reaction */
+					ACUD.Air_Auto_Flg = 0;
 					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);
 					
 					PC_C_Event_Reply(Command_Ptr);	
@@ -971,6 +989,7 @@ void PC_StateEvent(){
 					
 					Tempe_Ptr = Command_String + 2; // point to start position of Temperature
 					/* perform properly reaction */
+					ACUD.Air_Auto_Flg = 1;
 					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);
 						
 					PC_C_Event_Reply(Command_ptr);	
@@ -1069,54 +1088,6 @@ void ACP_StateEvent(){
 
 
 
-
-
-/* Aircondition manipulate */
-void Air_Manipulate(){
-	
-	
-	if(ACUD.Card_Exist_Flg){
-	/* Card_In_Flg will be handled in IIMER0_NmS() interrupt 1 */
-	
-	/* Card present */	
-		
-		if(ACUD.Air_Auto_Flg){
-		/* Performing Auto Mode */
-			Air_Auto_Control();
-	
-		}
-		else {
-		/* Performing Manual Mode */
-			Air_Manual_Control();
-
-		}
-	}
-	else {	
-	/* Card absent */
-	
-		if( timer < Checkout_Air_Period) {
-	
-			Air_Auto_Control();
-
-		} 
-		else if {timer<60){
-			
-			Air_Cooler_Pin = 0;							// Turn cooler off		
-			Air_Heater_Pin = 0; 						// Turn Herter off
-			Fan_L_Pin = 0;								 
-			Fan_M_Pin = 0;								
-			Fan_H_Pin = 0;	
-			} 
-			else {
-				timer = 0;
-			}
-		}
-	}
-}	
-	
-	
-	
-	
 	
 Air_Auto_Control(){
 
@@ -1233,8 +1204,51 @@ Air_Menual_Control(){
 				Fan_H_Pin = 1;
 			break;
 	}
-
 }
+
+
+
+/* Aircondition manipulate */
+void Air_Manipulate(){
+	
+	if(ACUD.Card_Exist_Flg){
+	/* Card_In_Flg will be handled in IIMER0_NmS() interrupt 1 */
+	
+	/* Card present */	
+		
+		if(ACUD.Air_Auto_Flg){
+		/* Performing Auto Mode */
+			Air_Auto_Control();
+		}
+		else {
+		/* Performing Manual Mode */
+			Air_Manual_Control();
+		}
+	}
+	else {	
+	/* Card absent */
+	
+		if( timer < Checkout_Air_Period) {
+	
+			Air_Auto_Control();
+
+		} 
+		else if {timer<60){
+			
+			Air_Cooler_Pin = 0;							// Turn cooler off		
+			Air_Heater_Pin = 0; 						// Turn Herter off
+			Fan_L_Pin = 0;								 
+			Fan_M_Pin = 0;								
+			Fan_H_Pin = 0;	
+			} 
+			else {
+				timer = 0;
+			}
+		}
+	}
+}	
+	
+
 
 void WatchDog(){
 	
@@ -1299,7 +1313,7 @@ Main(){
 //		if(ACUD.WD_Rst_Flg){					// Set by IIMER0_10mS() interrupt 1
 //			ACUD.WD_Rst_Flg = 0	;				// Clear flag
 //			WatchDog();							// Implement Reset watchdog
-		}
+//		}
 		
 		if(ACUD.Card_Det_Flg){					// Set by IIMER0_10mS() interrupt 1
 			ACUD.Card_Det_Flg = 0;				// Clear flag
