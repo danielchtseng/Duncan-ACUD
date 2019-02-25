@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W087  H1610
+// Ver : W091  H1100
 
 // on going: 
 
@@ -13,6 +13,7 @@
 #include <AT89X51.h>
 #include <string.h>
 #include <math.h>
+#include <stdlib.h>
 #include <stdbool.h>
 
 
@@ -771,7 +772,7 @@ int Hex2Dec(int x){
       return Dec;
 }
 
-int *Int2Str(int i){
+int *HexInt2ASCIIStr(int i){
 	int str[3];
 	int* Ptr;
 	str[0] = i/100+48;			// Hunderd digit
@@ -780,13 +781,30 @@ int *Int2Str(int i){
 	return Ptr;
 }
 
-int Str2Int(int *Str){
+int *HexInt2DecStr(int i){
+	
+	int str[3];
+	int* Ptr;
+	
+	str[0] = i/100;				// Hunderd digit
+	str[1] = (i/10)%10;			// Ten digit
+	str[2] = i%10;				// digit
+	return Ptr;
+}
 
+int DecStr2HexInt(int *Str){			// string length must be 2 digits 
+	int I;
+	int temp;
+	
+	I = *str;
+	I = (I*10)/16;
+	I = I << 1;					// Left rotate 
+	temp = (I*10)%16;			// 
+	I = I+temp;
+	temp = *(Str+1);
+	I = I+temp;
 
-
-
-	return i;
-
+	return I;
 }
 
 void ACUD_Init(){
@@ -863,7 +881,7 @@ void PC_StateEvent(){
 		   if s2 is not present in s1, s1 is returned. 
 		*/		
 		
-		ACUD_ID_3Digit = Int2Str(ACUD_ID);
+		ACUD_ID_3Digit = HexInt2DecStr(ACUD_ID);
 		
 		if(strstr(PC_In_Buf,ACUD_ID_3Digit)){		// String_Temp does occurre in PC_In_Buf 
 		/* "Enter" character not including in PC_In_Buf[] */
@@ -925,7 +943,7 @@ void PC_StateEvent(){
 					Tempe_Ptr = Command_String + 2;	// point to start position of Temperature
 					
 					/* perform properly reaction */
-					Temperature_Setting = Str2Int(&Tempe_Ptr);	
+					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);	
 						
 					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
@@ -934,7 +952,7 @@ void PC_StateEvent(){
 					
 					Tempe_Ptr = Command_String + 2;	// point to start position of Temperature					
 					/* perform properly reaction */
-					Temperature_Setting = Str2Int(&Tempe_Ptr);
+					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);
 						
 					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
@@ -943,7 +961,7 @@ void PC_StateEvent(){
 					
 					Tempe_Ptr = Command_String + 2; // point to start position of Temperature
 					/* perform properly reaction */
-					Temperature_Setting = Str2Int(&Tempe_Ptr);
+					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);
 					
 					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
@@ -952,7 +970,7 @@ void PC_StateEvent(){
 					
 					Tempe_Ptr = Command_String + 2; // point to start position of Temperature
 					/* perform properly reaction */
-					Temperature_Setting = Str2Int(&Tempe_Ptr);
+					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);
 						
 					PC_C_Event_Reply(Command_ptr);	
 					/* Reply same Cmd to PC which received from PC*/
