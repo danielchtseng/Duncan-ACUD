@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W091  H1100
+// Ver : W091  H1500
 
 // on going: 
 
@@ -13,9 +13,8 @@
 #include <AT89X51.h>
 #include <string.h>
 #include <math.h>
-#include <stdlib.h>
 #include <stdbool.h>
-
+// #include <stdlib.h>
 
 
 // @@@@@@@@@@ Declare @@@@@@@@@@
@@ -181,6 +180,7 @@ char 	ACP_Out_Buf[ACP_Out_Buf_Max];
 sbit 	ACP_RxD0		= P3^7;					// sbit RD   	= 0xB7;			// RD
 sbit 	ACP_TxD0		= P3^6;					// sbit WR      = 0xB6;			// WR
 sbit 	ACP_485Tx		= P3^5;					// sbit T1      = 0xB5;			// T1
+
 sbit 	ACP_INT1		= P3^3;					// sbit INT1    = 0xB3;			// INT0, UART 
 
 
@@ -189,14 +189,16 @@ sbit 	ACP_INT1		= P3^3;					// sbit INT1    = 0xB3;			// INT0, UART
 
 /* Declare related to ADC */
 unsigned int   	ADC_ConvertedData;				// 2 bytes
-int 			ConvertedData;					 
+int 			ConvertedData;		
+int     ADC_Data;
+			 
 // Port 1: 
 // ADC: SPI(Serial Peripheral Interface) Simulator
 sbit 	ADC_DIN_Pin  	= P1^3;
 sbit 	ADC_SCLK_Pin 	= P1^2;
 sbit 	ADC_CS_Pin   	= P1^1;
 sbit 	ADC_DO_Pin		= P1^0;
-int     ADC_Data;
+
 
 
 
@@ -207,19 +209,23 @@ int     ADC_Data;
 #define Checkin_Defa_Temp	23
 #define Auto_Temperature	23
 #define Auto_Defa_Period	10					// Default period
-int		ACUD_ID;
+int		ACUD_ID_Hex;
 float 	Temperature_Setting;
 float	Temperature_Reality;
 int		Checkout_Air_Period;					// 10-60min in an hour
 int     FAN_Speed;								//0:L, 1:M,  2:H
 
-// Port 3: 
+// Port 0: 
 sbit 	Fan_H_Pin	    = P0^0;					// Fan speed 
 sbit 	Fan_M_Pin	 	= P0^1;					// Fan speed 
 sbit 	Fan_L_Pin  		= P0^2;					// Fan speed 
 sbit 	Air_Cooler_Pin	= P0^3;					// 
 sbit 	Air_Heater_Pin	= P0^4;					// 
 sbit 	Card_Det_Pin  	= P0^5;					// Card detection
+
+// Port 3:
+sbit 	WatchDog_ST  	= P3^4;					// sbit T0      = 0xB4;	        // T0
+
 
 //* union {								// union: all variables in union share same memory
 	/* Note: data type must be signed or unsigned */
@@ -746,7 +752,7 @@ float ADC_Rd(){									// n=10 or 12, n bits convert resolution
 			ADC_Data <<= 1 ;					// Left shift
 		}
 	
-		ConvertedVolt = ConvertedVolt * 5 / (2 ^ 10 - 1);
+		ConvertedVolt = ConvertedVolt * 5 /(2^10 - 1);
 		Comm.ADC_Rd_Busy_Flg = 0;
 		return ConvertedVolt;
 	}
@@ -809,13 +815,8 @@ int DecStr2HexInt(int *Str){			// string length must be 2 digits
 
 void ACUD_Init(){
 	
-	// int Hex;
-	
 	P2 = 0xFF;
-	// Hex = P2;								// Reading DIP switch
-
-	// ACUD_ID_Dec = Hex2Dec(Hex);	
-	ACUD_ID = P2;	
+	ACUD_ID_Hex = P2;	
 	
 }
 
@@ -847,7 +848,7 @@ void System_Init(){
 	
 	/* P1(ADC) In/Out initial */
 	
-	/* P2(ACUD_ID) In/Out initial */
+	/* P2(ACUD_ID_Hex) In/Out initial */
 	
 	/* P3(ACP) In/Out initial */
 	
@@ -867,7 +868,7 @@ void System_Init(){
 void PC_StateEvent(){
 	
 	int 	*ACUD_ID_3Digit;
-	int     *ACUD_ID_Ptr					// Point to ID start position
+	int     *ACUD_ID_3Digit_Ptr					// Point to ID start position
 	char 	*Command_Ptr;					// point to Command start position
 	int		*Tempe_Ptr;						// Point to temperature start position
 	char	Indiv_To_PC[5];						// Individual data array to PC					
@@ -881,7 +882,7 @@ void PC_StateEvent(){
 		   if s2 is not present in s1, s1 is returned. 
 		*/		
 		
-		ACUD_ID_3Digit = HexInt2DecStr(ACUD_ID);
+		ACUD_ID_3Digit = HexInt2DecStr(ACUD_ID_Hex);
 		
 		if(strstr(PC_In_Buf,ACUD_ID_3Digit)){		// String_Temp does occurre in PC_In_Buf 
 		/* "Enter" character not including in PC_In_Buf[] */
@@ -889,8 +890,8 @@ void PC_StateEvent(){
 		
 			if(strstr(PC_In_Buf,"C")){			// "Command type" form PC
 				
-				ACUD_ID_Ptr = strstr(PC_In_Buf,ACUD_ID_3Digit); 
-				Command_Ptr = ACUD_ID_Ptr+3 ;			// point to start position of Cmd
+				ACUD_ID_3Digit_Ptr = strstr(PC_In_Buf,ACUD_ID_3Digit); 
+				Command_Ptr = ACUD_ID_3Digit_Ptr+3 ;			// point to start position of Cmd
 
 				
 				
@@ -994,7 +995,7 @@ void PC_StateEvent(){
 
 			}
 		}
-		/* ACUD_ID_Dec is not match */
+		/* ACUD_ID_3Digit is not match */
 		PC_In_Buf[PC_In_Buf_Max] = {0};	
 		Comm.PC_Rx_Ready_Flg = 0
 	}
@@ -1004,7 +1005,7 @@ PC_C_Event_Reply(chat* Cmd){
 	bool 	Resp;
 /* Reply back to PC */
 	strcopy(Indiv_To_PC,"A");
-	strcat(Indiv_To_PC,ACUD_ID_Dec);
+	strcat(Indiv_To_PC,ACUD_ID_3Digit);
 	strcat(Indiv_To_PC,Cmd);					
 	strcat(Indiv_To_PC,Enter);
 	/* "Enter" need to be included */
@@ -1235,7 +1236,26 @@ Air_Menual_Control(){
 
 }
 
-
+void WatchDog(){
+	
+		WatchDog_ST ~= WatchDog_ST;				// complement, to produce 10101010....
+	
+	/* The ST input can be derived from microprocessor address signals, 
+	   data signals, and/or control signals. When the microprocessor is 
+	   functioning normally, these signals would, as a matter of routine,
+	   cause the watchdog to be reset prior to timeout. To guarantee
+	   that the watchdog timer does not timeout, a high-to-low transition
+	   must occur at or less than the minimum shown in Table
+		
+		| TD PIN	|	MIN 	|	TYP 	|	MAX		|
+		| GND 		|	62.5 ms |	150 ms 	|	250 ms	|
+		| Float 	|	250 ms 	|	600 ms 	|	1000 ms	|
+		| VCC 		|	500 ms 	|	1200 ms |	2000 ms	|
+	
+		Invalue ST > 20nS   
+	*/
+	
+}
 
 // ##### Main Program #####
 Main(){
@@ -1276,10 +1296,11 @@ Main(){
 
 	while(1){
 	
-		if(ACUD.WD_Rst_Flg){					// Set by IIMER0_10mS() interrupt 1
-			ACUD.WD_Rst_Flg = 0	;				// Clear flag
-			Watchdog();							// Implement Reset watchdog
-		}	
+//		if(ACUD.WD_Rst_Flg){					// Set by IIMER0_10mS() interrupt 1
+//			ACUD.WD_Rst_Flg = 0	;				// Clear flag
+//			WatchDog();							// Implement Reset watchdog
+		}
+		
 		if(ACUD.Card_Det_Flg){					// Set by IIMER0_10mS() interrupt 1
 			ACUD.Card_Det_Flg = 0;				// Clear flag
 			ACUD.Card_Exist_Flg = Card_Det_Pin;	// Reading Key exist status
@@ -1293,6 +1314,8 @@ Main(){
 		ACP_StateEvent();
 		ACUD_StateEvent();
 		Air_Manipulate();						// depend on the command in Fan_Status 
+		
+		WatchDog();
 		
 	}
 }
