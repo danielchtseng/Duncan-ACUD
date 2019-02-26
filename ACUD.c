@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W091  H1630
+// Ver : W092  H1800
 
 // on going: 
 
@@ -205,15 +205,13 @@ sbit 	ADC_DO_Pin		= P1^0;
 
 /* Declare related to ACUD */
 
-#define Checkout_Defa_Temp	26					// Default temperature
-#define Checkin_Defa_Temp	23
-#define Auto_Temperature	23
-#define Auto_Defa_Period	10					// Default period
+
 int		ACUD_ID_Hex;
 float 	Temperature_Setting;
 float	Temperature_Reality;
 int		Checkout_Air_Period;					// 10-60min in an hour
-int     FAN_Speed;								//0:L, 1:M,  2:H
+int     Minute_Counter;
+int     FAN_Speed;								// 0:L, 1:M,  2:H
 
 // Port 0: 
 sbit 	Fan_H_Pin	    = P0^0;					// Fan speed 
@@ -234,12 +232,13 @@ sbit 	WatchDog_ST  	= P3^4;					// sbit T0      = 0xB4;	        // T0
 	struct {		
 		
 		unsigned char Card_Exist_Flg 		: 1; 	// 1: card existing, 0: card dispear				
+		unsigned char Air_Off_Flg			: 1;	// 1: Air Off
 		unsigned char Air_Cool_Flg			: 1; 	// 1: cool, 0: warm
 		unsigned char Air_Auto_Flg 			: 1; 	// 1: Auto mode, decide by ACP	
 		unsigned char Card_Det_Flg 			: 1;	// Card detect request	
 		unsigned char Temp_Rd_Flg			: 1;	// Temperautre reading request
-		unsigned char WD_Rst_Flg			: 1;	// WatchDog reset request
-		unsigned 						: 1;
+		// unsigned char WD_Rst_Flg			: 1;	// WatchDog reset request
+
 	}ACUD;
 //* } ACUD;
 
@@ -301,20 +300,18 @@ void TIMER0_Ten_mS_Init(int N){					// 10*mS timer
 void TIMER0_Ten_mS() interrupt 1 {				// Timer0 INT vector=000Bh
 	
 	Ten_mS_Counter++;
-
 	
 	if(Ten_mS_Counter % 10 == 0){				// 100mS(10mS*10) period
 		ACUD.Card_Det_Flg = 1;					// Room Card detect
-		ACUD.WD_Rst_Flg = 1;					// WatchDog reset
+		// ACUD.WD_Rst_Flg = 1;					// WatchDog reset
 	}
 	if(Ten_mS_Counter % 100 == 0){				// 1 Second(10mS*100) period
 
 		ACUD.Temp_Rd_Flg = 1;					// Room Temperature detect
 	}
 	if(Ten_mS_Counter == 6000){					// 1 Minute
-	
-		Ten_mS_Counter= 0;						// Reset 10mS_Counter
-
+		Minute_Counter++
+		Ten_mS_Counter = 0;						// Reset 10mS_Counter
 	}
 }
 
@@ -344,7 +341,8 @@ void uS_Delay (int N){							// Delay N*us, 52us or 104us
 
 // ##### PC Communication
 // void PC_UART_Init(float Fosc ,unsigned short Baudrate){		// Include T1 init
-void PC_UART_Init(){	
+void PC_UART_Init(){
+	
 	/* Special Function Registers Related to UART: 
 		SCON		Serial Control Register
 		TCON		Timer Control Register for Baud Rate Generator
@@ -514,7 +512,7 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 	if ( TI ){    								// SCON.TI, TI=1 means previous content have been sent.   
 		/* PC_Out_Buf[] hab been prepared ready and call by PC_Tx_Handler(),
 		  "Enter" char no neet to send to ACP */ 
-		/* Comm.PC_Tx_Busy_Flg had been set in PC_Tx_Handler() */
+		/* Comm.PC_Tx_Busy_Flg should been set in PC_Tx_Handler() */
 
 		SBUF = PC_Out_Buf[PC_Out_Buf_Index];
 		
@@ -812,8 +810,8 @@ int DecStr2HexInt(int *Str){			// string length must be 2 digits
 	
 	I = *str;
 	I = (I*10)/16;
-	I = I << 1;					// Left rotate 
-	temp = (I*10)%16;			// 
+	I = I << 1;										// Left rotate 
+	temp = (I*10)%16;								// 
 	I = I+temp;
 	temp = *(Str+1);
 	I = I+temp;
@@ -825,6 +823,20 @@ void ACUD_Init(){
 	
 	P2 = 0xFF;
 	ACUD_ID_Hex = P2;	
+	Checkout_Air_Period = 10;						// 10-60min in an hour
+	Minute_Counter = 0;
+	ACUD.Air_Auto_Flg = 0;
+	Temperature_Setting = 26;						// Checkout Default = 26 degree C
+	Temperature_Reality = 26;
+	FAN_Speed = 0; 									// 0:L, 1:M,  2:H
+	
+	Air_Cooler_Pin = 0;								// Turn cooler off		
+	Air_Heater_Pin = 0; 							// Turn Herter off
+	Fan_L_Pin = 0;									// Turn Fan Off
+	Fan_M_Pin = 0;								
+	Fan_H_Pin = 0;		
+	
+	
 	
 }
 
@@ -836,8 +848,8 @@ void ACUD_Init(){
 // ##### System Initialization
 void System_Init(){
 	
-	PCON = 0x00;										// SMOD = 0;
-	// SMOD = 0;										// Baud rate selection
+	PCON = 0x00;									// SMOD = 0;
+	// SMOD = 0;									// Baud rate selection
 	/* PCON: Power Control Register: 
 			 The PCON register is used for power control and double baud rate by set 1
 		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 |
@@ -860,7 +872,6 @@ void System_Init(){
 	
 	/* P3(ACP) In/Out initial */
 	
-	// PC_UART_Init(22.1184,9600);
 	PC_UART_Init();
 	TIMER0__Ten_mS_Init();							// Timer0 10ms 
 	ACP_Init();
@@ -871,160 +882,12 @@ void System_Init(){
 
 
 
-// ##### Event manipulate 
-/* PC Event manipulate */
-void PC_StateEvent(){
-	
-	int 	*ACUD_ID_3Digit;
-	int     *ACUD_ID_3Digit_Ptr					// Point to ID start position
-	char 	*Command_Ptr;					// point to Command start position
-	int		*Tempe_Ptr;						// Point to temperature start position
-	char	Indiv_To_PC[5];						// Individual data array to PC					
-	/* Using array to instead of pointer to reserve memory firmdly, when implementing strcpy(), strcat() */
-	
-
-	if(Comm.PC_Rx_Ready_Flg){
-		/* strstr(string1,string2)
-		   This function returns a position points to the first character of the 
-		   found s2 in s1, otherwise a null pointer.
-		   if s2 is not present in s1, s1 is returned. 
-		*/		
-		
-		ACUD_ID_3Digit = HexInt2DecStr(ACUD_ID_Hex);
-		
-		if(strstr(PC_In_Buf,ACUD_ID_3Digit)){		// String_Temp does occurre in PC_In_Buf 
-		/* "Enter" character not including in PC_In_Buf[] */
-			
-		
-			if(strstr(PC_In_Buf,"C")){			// "Command type" form PC
-				
-				ACUD_ID_3Digit_Ptr = strstr(PC_In_Buf,ACUD_ID_3Digit); 
-				Command_Ptr = ACUD_ID_3Digit_Ptr+3 ;			// point to start position of Cmd
-
-				
-				
-
-				if(strstr(Command_Ptr,"CI")) {				// Check In, Turn On Cooler
-					
-					/* perform properly reaction */
-					ACUD.Air_Auto_Flg = 0;
-					Temperature_Setting = Dec2Hex(Default);	// Default=23			
-						
-					PC_C_Event_Reply(Command_Ptr);	
-					/* Reply same Cmd to PC which received from PC*/
-				}
-				if(strstr(Command_Ptr,"MO")) {				// Check out
-					
-					/* perform properly reaction */
-					ACUD.Air_Auto_Flg = 0;
-						
-					PC_C_Event_Reply(Command_Ptr);	
-					/* Reply same Cmd to PC which received from PC*/
-				}
-				if(strstr(Command_Ptr,"CO")) {				// Trun On Cooler
-					
-					/* perform properly reaction */
-					ACUD.Air_Auto_Flg = 0;
-					Temperature_Setting = Dec2Hex(Default);	// Default=23							
-					
-					PC_C_Event_Reply(Command_Ptr);	
-					/* Reply same Cmd to PC which received from PC*/
-				}
-				if(strstr(Command_Ptr,"CC")) {				// Turn Off Cooler
-					
-					/* perform properly reaction */
-					ACUD.Air_Auto_Flg = 0;
-						
-					PC_C_Event_Reply(Command_Ptr);	
-					/* Reply same Cmd to PC which received from PC*/
-				}
-				if(strstr(Command_Ptr,"AC")) {				// Become Cooler mode
-					
-					/* perform properly reaction */	
-					ACUD.Air_Auto_Flg = 0;
-					
-					PC_C_Event_Reply(Command_Ptr);	
-					/* Reply same Cmd to PC which received from PC*/
-				}
-				if(strstr(Command_Ptr,"AH")) {				// Become Heater mode
-					
-					/* perform properly reaction */
-					ACUD.Air_Auto_Flg = 0;
-					
-					PC_C_Event_Reply(Command_Ptr);	
-					/* Reply same Cmd to PC which received from PC*/
-				}
-				if(strstr(Command_Ptr,"ST")) {				// ST Temperature setting
-					
-					Tempe_Ptr = Command_String + 2;			// point to start position of Temperature
-					
-					/* perform properly reaction */
-					ACUD.Air_Auto_Flg = 0;
-					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);	
-						
-					PC_C_Event_Reply(Command_Ptr);	
-					/* Reply same Cmd to PC which received from PC*/
-				}
-				if(strstr(Command_Ptr,"IT")) {				// Key In Temperature setting
-					
-					Tempe_Ptr = Command_String + 2;			// point to start position of Temperature					
-					/* perform properly reaction */
-					ACUD.Air_Auto_Flg = 0;
-					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);
-						
-					PC_C_Event_Reply(Command_Ptr);	
-					/* Reply same Cmd to PC which received from PC*/
-				}
-				if(strstr(Command_Ptr,"OT")) {				// Key Out Temperature setting
-				
-					Tempe_Ptr = Command_String + 2; 		// point to start position of Temperature
-					/* perform properly reaction */
-					ACUD.Air_Auto_Flg = 0;
-					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);
-					
-					PC_C_Event_Reply(Command_Ptr);	
-					/* Reply same Cmd to PC which received from PC*/
-				}
-				if(strstr(Command_Ptr,"RU")) {		// Check In
-					
-					Tempe_Ptr = Command_String + 2; // point to start position of Temperature
-					/* perform properly reaction */
-					ACUD.Air_Auto_Flg = 1;
-					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);
-						
-					PC_C_Event_Reply(Command_ptr);	
-					/* Reply same Cmd to PC which received from PC*/
-				}
-				
-				
-				
-
-			else if ( findstr(PC_In_Buf,"D")){	// "Confirm type" form PC
-			
-				if(strstr(PC_In_Buf,Command_Ptr) {		// Check In
-					
-					
-					
-					/* perform properly reaction */			
-			
-			
-					PC_D_Event_Reply(Command_Ptr);	
-					/* Reply same Cmd to PC which received from PC*/
-			
-
-			}
-		}
-		/* ACUD_ID_3Digit is not match */
-		PC_In_Buf[PC_In_Buf_Max] = {0};	
-		Comm.PC_Rx_Ready_Flg = 0
-	}
-}
 
 PC_C_Event_Reply(chat* Cmd){
 	bool 	Resp;
 /* Reply back to PC */
 	strcopy(Indiv_To_PC,"A");
-	strcat(Indiv_To_PC,ACUD_ID_3Digit);
+	strcat(Indiv_To_PC,ACUD_ID_3Dec);
 	strcat(Indiv_To_PC,Cmd);					
 	strcat(Indiv_To_PC,Enter);
 	/* "Enter" need to be included */
@@ -1042,6 +905,154 @@ PC_C_Event_Reply(chat* Cmd){
 		   resend again by PC site */
 		Comm.PC_Rx_Ready_Flg = 0;
 
+}
+
+
+PC_D_Event_Reply(chat* Cmd){
+	bool 	Resp;
+/* Reply back to PC */
+	strcopy(Indiv_To_PC,"DONE");
+	strcat(Indiv_To_PC,ACUD_ID_3Dec);					
+	strcat(Indiv_To_PC,Enter);
+	/* "Enter" need to be included */
+				
+	Resp = PC_Tx_Handler(&Indiv_To_PC);
+	if(Resp == 1){
+	/* anknowledge back to PC successful */
+		PC_In_Buf[PC_In_Buf_Max] = {0};	
+		Comm.PC_Rx_Ready_Flg = 0;
+	}		
+	else {
+		/* anknowledge back to PC failure */	
+		
+		/* Ignore this failure. assuming command will be 
+		   resend again by PC site */
+		Comm.PC_Rx_Ready_Flg = 0;
+
+}
+
+
+
+
+// ##### Event manipulate 
+/* PC Event manipulate */
+void PC_StateEvent(){
+	
+	int 	*ACUD_ID_3Dec;
+	int     *ACUD_ID_3Dec_Ptr					// Point to ID start position
+	char 	*Command_Ptr;						// point to Command start position
+	int		*Tempe_Ptr;							// Point to temperature start position
+	char	Indiv_To_PC[5];						// Individual data array to PC					
+	/* Using array to instead of pointer to reserve memory firmdly, when implementing strcpy(), strcat() */
+	
+
+	if(Comm.PC_Rx_Ready_Flg){
+		/* strstr(string1,string2)
+		   This function returns a position points to the first character of the 
+		   found s2 in s1, otherwise a null pointer.
+		   if s2 is not present in s1, s1 is returned. 
+		*/		
+		
+		ACUD_ID_3Dec = HexInt2DecStr(ACUD_ID_Hex);
+		
+		if(strstr(PC_In_Buf,ACUD_ID_3Dec)){						// String_Temp does occurre in PC_In_Buf 
+		/* "Enter" character not including in PC_In_Buf[] */
+			
+		
+			if(strstr(PC_In_Buf,"C")){							// "Command type" form PC
+				
+				ACUD_ID_3Dec_Ptr = strstr(PC_In_Buf,ACUD_ID_3Dec); 
+				Command_Ptr = ACUD_ID_3Dec_Ptr+3 ;				// point to start position of Cmd
+
+				if(strstr(Command_Ptr,"CI")) {					// Check In, Turn On Cooler
+					
+					ACUD.Air_Auto_Flg = 1;
+					Temperature_Setting = 23;					// Default=23			
+					
+					PC_C_Event_Reply(Command_Ptr);	
+				} 
+				else if(strstr(Command_Ptr,"MO")) {				// Check out
+					
+					ACUD.Air_Off_Flg = 1;
+
+					PC_C_Event_Reply(Command_Ptr);		
+				}
+				else if(strstr(Command_Ptr,"CO")) {				// Trun On Cooler
+	
+					ACUD.Air_Auto_Flg = 1;
+					Temperature_Setting = 23;					// Default=23							
+					
+					PC_C_Event_Reply(Command_Ptr);	
+				}
+				else if(strstr(Command_Ptr,"CC")) {				// Turn Off Cooler
+								
+					ACUD.Air_Off_Flg = 1;
+						
+					PC_C_Event_Reply(Command_Ptr);		
+				}
+				else if(strstr(Command_Ptr,"AC")) {				// Become Cooler mode
+					
+					/* No further action need */
+					
+					PC_C_Event_Reply(Command_Ptr);	
+				}
+				else if(strstr(Command_Ptr,"AH")) {				// Become Heater mode
+					
+					/* No further action need */
+					
+					PC_C_Event_Reply(Command_Ptr);	
+
+				}
+				else if(strstr(Command_Ptr,"ST")) {				// ST Temperature setting
+					
+					Tempe_Ptr = Command_String + 2;				// point to start position of Temperature		
+					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);	
+						
+					PC_C_Event_Reply(Command_Ptr);	
+					/* Reply same Cmd to PC which received from PC*/
+				}
+				else if(strstr(Command_Ptr,"IT")) {				// Key In Temperature setting
+					
+					Tempe_Ptr = Command_String + 2;				// point to start position of Temperature		
+					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);	
+						
+					PC_C_Event_Reply(Command_Ptr);	
+					/* Reply same Cmd to PC which received from PC*/
+				}
+				else if(strstr(Command_Ptr,"OT")) {				// Key Out Temperature setting
+				
+					Tempe_Ptr = Command_String + 2;				// point to start position of Temperature		
+					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);	
+					
+					PC_C_Event_Reply(Command_Ptr);	
+					/* Reply same Cmd to PC which received from PC*/
+				}
+				else if(strstr(Command_Ptr,"RU")) {				// Auto
+					
+					ACUD.Air_Auto_Flg = 1;
+					Tempe_Ptr = Command_String + 2; 			// point to start position of Temperature
+					Checkout_Air_Period = DecStr2HexInt(&Tempe_Ptr);
+						
+					PC_C_Event_Reply(Command_ptr);	
+					/* Reply same Cmd to PC which received from PC*/
+				}
+				
+
+			else if ( findstr(PC_In_Buf,"DO")){	// "Confirm type" form PC
+			
+				if(strstr(PC_In_Buf,Command_Ptr) {				// 
+						
+			
+					PC_D_Event_Reply(Command_Ptr);	
+					/* Reply same Cmd to PC which received from PC*/
+			
+
+			}
+		}
+		/* ACUD_ID_3Dec is not match */
+		PC_In_Buf[PC_In_Buf_Max] = {0};	
+		Comm.PC_Rx_Ready_Flg = 0
+	}
 }
 
 
@@ -1211,6 +1222,8 @@ Air_Menual_Control(){
 /* Aircondition manipulate */
 void Air_Manipulate(){
 	
+	// ACUD.Air_Auto_Flg need to be processed
+	
 	if(ACUD.Card_Exist_Flg){
 	/* Card_In_Flg will be handled in IIMER0_NmS() interrupt 1 */
 	
@@ -1228,21 +1241,22 @@ void Air_Manipulate(){
 	else {	
 	/* Card absent */
 	
-		if( timer < Checkout_Air_Period) {
-	
-			Air_Auto_Control();
-
-		} 
-		else if {timer<60){
+		if(Minute_Counter < Checkout_Air_Period){
 			
+			Air_Auto_Control();
+		} 
+		else if(Minute_Counter < 60){
+			
+				
 			Air_Cooler_Pin = 0;							// Turn cooler off		
 			Air_Heater_Pin = 0; 						// Turn Herter off
-			Fan_L_Pin = 0;								 
+			Fan_L_Pin = 0;								// Turn Fan off
 			Fan_M_Pin = 0;								
-			Fan_H_Pin = 0;	
+			Fan_H_Pin = 0;					
+				
 			} 
 			else {
-				timer = 0;
+				Minute_Counter = 0;
 			}
 		}
 	}
@@ -1274,7 +1288,7 @@ void WatchDog(){
 // ##### Main Program #####
 Main(){
 
-	IE=0x00;									// Set all interrupt disable
+	IE = 0x00;									// Set all interrupt disable
 	
 	/* Initialization manipulate */
 	System_Init();	
@@ -1326,7 +1340,7 @@ Main(){
 
 		PC_StateEvent();
 		ACP_StateEvent();
-		ACUD_StateEvent();
+		// ACUD_StateEvent();
 		Air_Manipulate();						// depend on the command in Fan_Status 
 		
 		WatchDog();
