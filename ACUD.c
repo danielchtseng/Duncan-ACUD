@@ -2,13 +2,12 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W092  H1800
+// Ver : W093  H1530
 
 // on going: 
 
 
-// @@@@@@@@@@ include @@@@@@@@@@
-
+// @@@@@@@@@@@@@@@      include      @@@@@@@@@@@@@@@
 
 #include <AT89X51.h>
 #include <string.h>
@@ -17,8 +16,7 @@
 // #include <stdlib.h>
 
 
-// @@@@@@@@@@ Declare @@@@@@@@@@
-
+// @@@@@@@@@@@@@@@      Declare      @@@@@@@@@@@@@@@
 
 /* Keil C Data types
 Data Types				Bits	Bytes	Value Range
@@ -110,9 +108,7 @@ sbit 	EX0  	= 0xA8;							// sbit EX0 = 0xA8^0
 */
 
 /* Declare related to Timer */
-
 unsigned short 	Ten_mS_Counter;					// 2 bytes: 0-65535
-
 
 /* Bit Field: 是一種省空間的特殊 data member, 可以使用特定幾個 bit 來放 data.
 // The declaration of a bit-field has the following form inside a structure
@@ -127,42 +123,30 @@ unsigned short 	Ten_mS_Counter;					// 2 bytes: 0-65535
 */
 
 /* Declare related to Communication */
-//*union {											// union: all variables in union share same memory
+//*union {										// union: all variables in union share same memory
 	/* Note: data type must be signed or unsigned */
 //*	unsigned char	Comm_Flag;
-	
 	struct {		
-
 		// relate to PC
 		unsigned char PC_Tx_Busy_Flg 	: 1;				
-
 		unsigned char PC_Rx_Ready_Flg 	: 1;
-		
 		/* relate to ACP */
 		unsigned char ACP_Tx_Busy_Flg 	: 1;		
 		unsigned char ACP_Rx_Ready_Flg 	: 1;	
-		
-		/* relate to ADC */
-		unsigned char ADC_Rd_Busy_Flg 	: 1;
-		
-	}Comm; 
-	
+	}Comm; 	
 //*} Comm;
 
 
-
 /* Declare related to UART */
-#define Fosc				22.1184			// ***** Need to be confirmed (0r 11.0592 )
-#define Baudrate			9600			// ***** Need to be confirmed
-#define PC_In_Buf_Max 		5				// ***** Need to be confirmed
-#define PC_Out_Buf_Max		5				// ***** Need to be confirmed
-#define Enter				0x13			// ASCII 13: carry Return
-
+#define Fosc				22.1184				// ***** Need to be confirmed (0r 11.0592 )
+#define Baudrate			9600				// ***** Need to be confirmed
+#define PC_In_Buf_Max 		5					// ***** Need to be confirmed
+#define PC_Out_Buf_Max		5					// ***** Need to be confirmed
+#define Enter				0x13				// ASCII 13: carry Return
 int 	PC_In_Buf_Index;
 int 	PC_Out_Buf_Index;
 char 	PC_In_Buf[PC_In_Buf_Max];
 char 	PC_Out_Buf[PC_Out_Buf_Max];
-
 sbit 	PC_485Tx   		= P3^2;					// sbit INT0    = 0xB2;			// UART TXD
 sbit 	UART_TxD1 		= P3^1;					// sbit TXD     = 0xB1;			// UARD RXD
 sbit 	UART_RxD1 		= P3^0;					// sbit RXD     = 0xB0;
@@ -180,17 +164,13 @@ char 	ACP_Out_Buf[ACP_Out_Buf_Max];
 sbit 	ACP_RxD0		= P3^7;					// sbit RD   	= 0xB7;			// RD
 sbit 	ACP_TxD0		= P3^6;					// sbit WR      = 0xB6;			// WR
 sbit 	ACP_485Tx		= P3^5;					// sbit T1      = 0xB5;			// T1
-
 sbit 	ACP_INT1		= P3^3;					// sbit INT1    = 0xB3;			// INT0, UART 
-
-
-
 
 
 /* Declare related to ADC */
 unsigned int   	ADC_ConvertedData;				// 2 bytes
 int 			ConvertedData;		
-int     ADC_Data;
+int     		ADC_Data;
 			 
 // Port 1: 
 // ADC: SPI(Serial Peripheral Interface) Simulator
@@ -200,19 +180,13 @@ sbit 	ADC_CS_Pin   	= P1^1;
 sbit 	ADC_DO_Pin		= P1^0;
 
 
-
-
-
 /* Declare related to ACUD */
-
-
 int		ACUD_ID_Hex;
 float 	Temperature_Setting;
 float	Temperature_Reality;
 int		Checkout_Air_Period;					// 10-60min in an hour
 int     Minute_Counter;
 int     FAN_Speed;								// 0:L, 1:M,  2:H
-
 // Port 0: 
 sbit 	Fan_H_Pin	    = P0^0;					// Fan speed 
 sbit 	Fan_M_Pin	 	= P0^1;					// Fan speed 
@@ -220,25 +194,21 @@ sbit 	Fan_L_Pin  		= P0^2;					// Fan speed
 sbit 	Air_Cooler_Pin	= P0^3;					// 
 sbit 	Air_Heater_Pin	= P0^4;					// 
 sbit 	Card_Det_Pin  	= P0^5;					// Card detection
-
 // Port 3:
 sbit 	WatchDog_ST  	= P3^4;					// sbit T0      = 0xB4;	        // T0
 
 
-//* union {								// union: all variables in union share same memory
+//* union {										// union: all variables in union share same memory
 	/* Note: data type must be signed or unsigned */
-
 //*	unsigned char ACUD_Flag;
 	struct {		
-		
-		unsigned char Card_Exist_Flg 		: 1; 	// 1: card existing, 0: card dispear				
-		unsigned char Air_Off_Flg			: 1;	// 1: Air Off
-		unsigned char Air_Cool_Flg			: 1; 	// 1: cool, 0: warm
+		unsigned char Card_Exist_Flg 		: 1; 	// 1: card existing, 0: card dispear	
+		// unsigned char ACP_On_Flg			: 1; 	// 1: On, 0: Off
+		unsigned char Air_Cool_Flg			: 1; 	// 1: Cooler, 0: eater
 		unsigned char Air_Auto_Flg 			: 1; 	// 1: Auto mode, decide by ACP	
 		unsigned char Card_Det_Flg 			: 1;	// Card detect request	
 		unsigned char Temp_Rd_Flg			: 1;	// Temperautre reading request
 		// unsigned char WD_Rst_Flg			: 1;	// WatchDog reset request
-
 	}ACUD;
 //* } ACUD;
 
@@ -248,8 +218,7 @@ sbit 	WatchDog_ST  	= P3^4;					// sbit T0      = 0xB4;	        // T0
 
 
 
-// @@@@@@@@@@ Program @@@@@@@@@@.
-
+// @@@@@@@@@@@@@@@      Program      @@@@@@@@@@@@@@@
 
 
 /* Interrupt Vector(中斷向量)
@@ -260,8 +229,6 @@ sbit 	WatchDog_ST  	= P3^4;					// sbit T0      = 0xB4;	        // T0
 		|	   3	 |TIMER/COUNTER 1|	 001Bh  |
 		|      4	 |  SERIAL PORT	 |   0023h  |
 		|      5	 |TIMER/COUNTER 2|	 002Bh  | */
-
-
 
 // ##### Period Timer	
 void TIMER0_Ten_mS_Init(int N){					// 10*mS timer
@@ -318,11 +285,10 @@ void TIMER0_Ten_mS() interrupt 1 {				// Timer0 INT vector=000Bh
 void mS_Delay(int N){							// Delay N*ms 
 	
 	int i,j;									// 宣告整數變數i,j,N 
-	
 	for (i=0;i<N;i++)							// 計數N次,延遲 N*1ms 
-	//#if Fosc==22.1184							// 延遲 t*1ms @22.1184MHz
+	//#if Fosc == 22.1184							// 延遲 t*1ms @22.1184MHz
 		for (j=0;j<1600;j++);
-		;										// means NOP ;
+	//	;										// means NOP ;
 	//#else										// 延遲 t*1ms @11.0952MHz
 	//	for (j=0;j<800;j++);	 
 	//#endif
@@ -456,7 +422,7 @@ void PC_UART_Init(){
 
 }
 
-int PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){			// Pointer of individual data array (Indiv_To_PC[])
+int PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){		// Pointer of individual data array (Indiv_To_PC[])
 		/* Data in Indiv_To_PC[] including "Enter" as tail */
 	int i = 0;
 	char PC_TBUF;
@@ -465,7 +431,6 @@ int PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){			// Pointer of individual data array (
 	/* Got the rigth to allow data in Indiv_To_PC[] port to PC_Out_Buf[] */
 	
 		Comm.PC_Tx_Busy_Flg = 1; 				// clear by PC_UART_RxTx() interrupt 4
-
 		PC_TBUF = *Indiv_PC_Tx_Ptr;
 		while(PC_TBUF!= Enter){
 			PC_Out_Buf[i]=*Indiv_PC_Tx_Ptr;
@@ -473,7 +438,6 @@ int PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){			// Pointer of individual data array (
 			Indiv_PC_Tx_Ptr++;
 		}
 		PC_Out_Buf[i]=*Indiv_PC_Tx_Ptr;			// Put "Enter" into PC_Out_Buf[]
-		
 		PC_Out_Buf_Index = 0;					// Initial PC_Out_Buf_Index
 		TI=1; 									// Triger UART_ISR() to start UART_Tx 
 		
@@ -481,8 +445,6 @@ int PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){			// Pointer of individual data array (
 	}
 	else {
 	/*  Indiv_To_PC[] does not to port to PC_Out_Buf[] */	
-	
-	
 		return 0;								// data transmit deny
 	}
 }
@@ -492,10 +454,8 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 	EA=0;										// Suspend all interrupt
 	
 	if ( RI ){ 									// SCON.RI, RI=1 means new content have received                       	
-		
 		if (SBUF != Enter) {					
 		/* "Enter" emerged */
-		
 			PC_In_Buf[PC_In_Buf_Index] = SBUF;	
 			PC_In_Buf_Index++;
 			RI = 0;								// SCON.RI=0, force UART_Rx ready to receive again
@@ -503,7 +463,6 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 		else {									// PC_In_Buf_Index >= PC_In_Buf_Max 
 			// PC_In_Buf[PC_In_Buf_Index] = SBUF;	
 			/* "Enter" character not including in PC_In_Buf[] */
-			
 			PC_In_Buf_Index = 0;				// Reset PC_In_Buf_Index
 			Comm.PC_Rx_Ready_Flg = 1; 			// For PC_StateEvent()
 		}
@@ -515,10 +474,8 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 		/* Comm.PC_Tx_Busy_Flg should been set in PC_Tx_Handler() */
 
 		SBUF = PC_Out_Buf[PC_Out_Buf_Index];
-		
 		if ((SBUF != Enter)) {					
 		/* "Enter" emerged */
-		
 			PC_485Tx = 1; 						// Enable RS485 Tx 
 			PC_Out_Buf_Index++;
 		}			
@@ -529,7 +486,6 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 		}
 		TI = 0;									// SCON.TI=0, UART_Tx ready to sent 
 	}
-	
 	EA=1;										// Resume all interrupt
 }		
 
@@ -541,7 +497,6 @@ void ACP_Init(){
 	ACP_In_Buf_Index = 0;	
 	ACP_Out_Buf_Index = 0;
 	ACP_485Tx = 0;								// RS485 Tx disable	(= Rx enable)
-	
 	IT1 = 1;									// Setting a high-to-low edge(Falling) signal method to triger EX1 interrupt.
 	/* EX1 will be enabled in main() */
 }
@@ -555,14 +510,11 @@ void ACP_Tx_PhyLayer(){
 	int 	i = 0;
 	char	ACP_T_TEMP;
 
-
 	ACP_T_TEMP = ACP_Out_Buf[ACP_Out_Buf_Index];
-	
 	while (ACP_T_TEMP != Enter){
-		
 		EA = 0;									// Suspending all interrupt happen 
-		/* Interrupt disable for 1 byte period only */
-										
+		/* Interrupt disable for 1 byte period only */	
+		
 		ACP_485Tx = 1;							// RS485 Tx enable (= Rx disable)
 		ACP_TxD0 = 0;							// sent Start bit "0" on P3.6(WR)
 		uS_Delay(104);
@@ -577,7 +529,6 @@ void ACP_Tx_PhyLayer(){
 		}
 		ACP_TxD0 = 1;							// sent Stop bit "1" on P3.6(WR)
 		uS_Delay(104);	
-		
 		ACP_Out_Buf_Index++;
 		ACP_T_TEMP = ACP_Out_Buf[ACP_Out_Buf_Index];
 		
@@ -586,13 +537,11 @@ void ACP_Tx_PhyLayer(){
 	ACP_485Tx = 0;
 	Comm.ACP_Tx_Busy_Flg = 0;				
 	/* For ACP_Tx_Handler(), to allow transmit again over IOSerial */
-		
 }
 
 
 int ACP_Tx_Handler(int *Indiv_To_ACP_Ptr){		// Pointer of individual data array(Indiv_To_ACP[])
 	/* Data in Indiv_To_ACP[] including "Enter" as tail */
-	
 	// sbit ACP_RxD0 	= P3^7;					// RD
 	// sbit ACP_TxD0	= P3^6;					// WR
 	// sbit ACP_485Tx   = P3^5;					// T1
@@ -603,26 +552,20 @@ int ACP_Tx_Handler(int *Indiv_To_ACP_Ptr){		// Pointer of individual data array(
 	
 	if(!(Comm.ACP_Tx_Busy_Flg)){				// IOSerial Tx avilable
 	/* Got the right to allow data in Indiv_To_ACP[] port to ACP_Out_Buf[] */	
-		
 		Comm.ACP_Tx_Busy_Flg = 1; 				// clear by ACP_Tx()
-		
 		ACP_T_TEMP=*Indiv_To_ACP_Ptr;
 		while(ACP_T_TEMP != Enter) {
 			ACP_Out_Buf[i]=*Indiv_To_ACP_Ptr;
 			i++;
 			Indiv_To_ACP_Ptr++;
 		}
-		ACP_Out_Buf[i]=*Indiv_To_ACP_Ptr;			// Put "Enter" into ACP_Out_Buf[]
-		
+		ACP_Out_Buf[i]=*Indiv_To_ACP_Ptr;		// Put "Enter" into ACP_Out_Buf[]
 		ACP_Out_Buf_Index = 0;					// Initial PC_Out_Buf_Index
 		ACP_Tx_PhyLayer();						// Call ACP_Tx_PhyLayer() to transmit data via ACP
-		
 		return 1;								// data transmit permit
 	}
 	else {
-		
 		return 0;								// data transmit deny
-
 	}
 }
 
@@ -631,7 +574,6 @@ void ACP_Rx() interrupt 2 {
 /* EX1 INT, vector=0013h, UART Simulator */
 	
 	char ACP_R_TEMP;							// Same as UART Rx SBUF
-
 	// Tx no need to using interrupt. 
 	// sbit ACP_RxD0 	= P3^7;					// RD
 	// sbit ACP_TxD0	= P3^6;					// WR
@@ -643,39 +585,30 @@ void ACP_Rx() interrupt 2 {
 	/*   When IT1 set "0", EX1 need to be cleared to "0", after interrupt occured.
 		 When IT1 set to "1" EX1 will be cleared to "0" by 8051, after interrupt occured.*/
 	
-	
 	uS_Delay(52);
-
 	if (ACP_RxD0 == 0){ 						// Expecting start bit "0" 
 		int i;
 		for (i=0;i<8;i++){
 			uS_Delay(104);
-			
 			if (ACP_RxD0 == 1){
 				ACP_R_TEMP |= 1;
 				ACP_R_TEMP << 1;				// ACP_SBUF left shift 1 bit 
-
 			} else {
 				ACP_R_TEMP << 1;				// ACP_SBUF left shift 1 bit 
 			} 	
 		}
-		
 		uS_Delay(104);					
 		if (ACP_RxD0 != 1){ 				// Stop bit
 		/* One byte(10 bits) received sucessful */
-		
 			if(ACP_R_TEMP != Enter ){
 			/* String receiving not complete */
-			
 				ACP_In_Buf[ACP_In_Buf_Index] = ACP_R_TEMP;	
 				ACP_In_Buf_Index++;
 			}
 			else {								// ACP_In_Buf_Index >= ACP_In_Buf_Max 
 			/* String receiving completed */
-			
 				ACP_In_Buf[ACP_In_Buf_Index] = ACP_R_TEMP;
 				/* "Enter" including in ACP_In_Buf[] */
-				
 				ACP_R_TEMP=0;
 				ACP_In_Buf_Index = 0;			// Reset UART_Inbuf_Index
 				Comm.ACP_Rx_Ready_Flg = 1; 		// For ACP_StateEvent()
@@ -683,19 +616,17 @@ void ACP_Rx() interrupt 2 {
 		}
 	} else {
 		/* One byte(10 bits) received failure */
-	
 		ACP_R_TEMP=0;
 		ACP_In_Buf_Index = 0;					// Reset UART_Inbuf_Index
-		Comm.ACP_Rx_Ready_Flg = 0; 				// 
+		Comm.ACP_Rx_Ready_Flg = 0; 				
 	}
-	
 	EA = 1;										// Resume all interrupt
 }
 
 
 // ##### Temperture Reading: ADC AD7911
 void ADC_Init(){
-/* ADC AD7911 
+/* ADC AD7911 */
 // a minimum of 14 serial clock cycles, respectively, are needed 
 // to complete the conversion and access the complete conversion result.
 //
@@ -726,37 +657,29 @@ void ADC_Init(){
 		ADC_SCLK_Pin = 1;
 	}
 	ADC_CS_Pin = 1;
-	Comm.ADC_Rd_Busy_Flg = 0;
 }
 
 float ADC_Rd(){									// n=10 or 12, n bits convert resolution
 	int i;
 	float ConvertedVolt = 0;
 	
-	if (Comm.ADC_Rd_Busy_Flg !=1) {
-		Comm.ADC_Rd_Busy_Flg = 1;
-		ADC_DO_Pin = 1;
-		ADC_CS_Pin = 1;
+	ADC_DO_Pin = 1;
+	ADC_CS_Pin = 1;
+	ADC_SCLK_Pin = 0;
+	if (i=0,i<14,i++){
+		ADC_SCLK_Pin = 1;
 		ADC_SCLK_Pin = 0;
-
-		if (i=0,i<14,i++){
-			ADC_SCLK_Pin = 1;
-			ADC_SCLK_Pin = 0;
-			if (ADC_DO_Pin){
-				ConvertedVolt = ConvertedVolt || 0x0001;		// set LSB = 1
-			}else {
+		if (ADC_DO_Pin){
+			ConvertedVolt = ConvertedVolt || 0x0001;		// set LSB = 1
+		}else {
 				ConvertedVolt = ConvertedVolt && 0xFFFE;   		// set LSB = 0
-			}
-			ADC_Data <<= 1 ;					// Left shift
 		}
+		ADC_Data <<= 1 ;					// Left shift
+	}
+	ConvertedVolt = ConvertedVolt * 5 /(2^10 - 1);
+	Comm.ADC_Rd_Busy_Flg = 0;
 	
-		ConvertedVolt = ConvertedVolt * 5 /(2^10 - 1);
-		Comm.ADC_Rd_Busy_Flg = 0;
-		return ConvertedVolt;
-	}
-	else {
-		
-	}
+	return ConvertedVolt;
 }
 
 
@@ -787,31 +710,34 @@ int Dec2Hex( int D){
 int *HexInt2ASCIIStr(int i){
 	int str[3];
 	int* Ptr;
-	str[0] = i/100+48;			// Hunderd digit
-	str[1] = (i/10)%10+48;		// Ten digit
-	str[2] = i%10+48;			// digit
+	
+	str[0] = i/100+48;							// Hunderd digit
+	str[1] = (i/10)%10+48;						// Ten digit
+	str[2] = i%10+48;							// digit
+	
 	return Ptr;
 }
 
 int *HexInt2DecStr(int i){
-	
 	int str[3];
 	int* Ptr;
 	
-	str[0] = i/100;				// Hunderd digit
-	str[1] = (i/10)%10;			// Ten digit
-	str[2] = i%10;				// digit
+	str[0] = i/100;								// Hunderd digit
+	str[1] = (i/10)%10;							// Ten digit
+	str[2] = i%10;	
+	// digit
 	return Ptr;
 }
 
-int DecStr2HexInt(int *Str){			// string length must be 2 digits 
+int DecStr2HexInt(int *Str){					
+	/* string length must be 2 digits */
 	int I;
 	int temp;
 	
 	I = *str;
 	I = (I*10)/16;
-	I = I << 1;										// Left rotate 
-	temp = (I*10)%16;								// 
+	I = I << 1;									// Left rotate 
+	temp = (I*10)%16;							// 
 	I = I+temp;
 	temp = *(Str+1);
 	I = I+temp;
@@ -823,21 +749,19 @@ void ACUD_Init(){
 	
 	P2 = 0xFF;
 	ACUD_ID_Hex = P2;	
-	Checkout_Air_Period = 10;						// 10-60min in an hour
+	Checkout_Air_Period = 10;					// 10-60min in an hour
 	Minute_Counter = 0;
+	ACUD.Air_On_Flg = 0;
 	ACUD.Air_Auto_Flg = 0;
-	Temperature_Setting = 26;						// Checkout Default = 26 degree C
+	Temperature_Setting = 26;					// Checkout Default = 26 degree C
 	Temperature_Reality = 26;
-	FAN_Speed = 0; 									// 0:L, 1:M,  2:H
+	FAN_Speed = 0; 								// 0:L, 1:M,  2:H
 	
-	Air_Cooler_Pin = 0;								// Turn cooler off		
-	Air_Heater_Pin = 0; 							// Turn Herter off
-	Fan_L_Pin = 0;									// Turn Fan Off
+	Air_Cooler_Pin = 0;							// Turn cooler off		
+	Air_Heater_Pin = 0; 						// Turn Herter off
+	Fan_L_Pin = 0;								// Turn Fan Off
 	Fan_M_Pin = 0;								
 	Fan_H_Pin = 0;		
-	
-	
-	
 }
 
 
@@ -848,9 +772,8 @@ void ACUD_Init(){
 // ##### System Initialization
 void System_Init(){
 	
-	PCON = 0x00;									// SMOD = 0;
-	// SMOD = 0;									// Baud rate selection
-	/* PCON: Power Control Register: 
+	PCON = 0x00;								// SMOD = 0;
+	/* SMOD = 0;								// Baud rate selection
 			 The PCON register is used for power control and double baud rate by set 1
 		| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 |
 		| SMOD | RSV2 |	RSV1 | RSV0	| GF1  | GF0  |	PWDN | IDL  |
@@ -873,11 +796,10 @@ void System_Init(){
 	/* P3(ACP) In/Out initial */
 	
 	PC_UART_Init();
-	TIMER0__Ten_mS_Init();							// Timer0 10ms 
+	TIMER0__Ten_mS_Init();						// Timer0 10ms 
 	ACP_Init();
 	ADC_Init();
 	ACUD_Init();
-	
 }
 
 
@@ -939,12 +861,11 @@ PC_D_Event_Reply(chat* Cmd){
 void PC_StateEvent(){
 	
 	int 	*ACUD_ID_3Dec;
-	int     *ACUD_ID_3Dec_Ptr					// Point to ID start position
-	char 	*Command_Ptr;						// point to Command start position
-	int		*Tempe_Ptr;							// Point to temperature start position
-	char	Indiv_To_PC[5];						// Individual data array to PC					
+	int     *ACUD_ID_3Dec_Ptr						// Point to ID start position
+	char 	*Command_Ptr;							// point to Command start position
+	int		*Tempe_Ptr;								// Point to temperature start position
+	char	Indiv_To_PC[5];							// Individual data array to PC					
 	/* Using array to instead of pointer to reserve memory firmdly, when implementing strcpy(), strcat() */
-	
 
 	if(Comm.PC_Rx_Ready_Flg){
 		/* strstr(string1,string2)
@@ -952,101 +873,107 @@ void PC_StateEvent(){
 		   found s2 in s1, otherwise a null pointer.
 		   if s2 is not present in s1, s1 is returned. 
 		*/		
-		
 		ACUD_ID_3Dec = HexInt2DecStr(ACUD_ID_Hex);
-		
-		if(strstr(PC_In_Buf,ACUD_ID_3Dec)){						// String_Temp does occurre in PC_In_Buf 
+		if(strstr(PC_In_Buf,ACUD_ID_3Dec)){			// String_Temp does occurre in PC_In_Buf 
 		/* "Enter" character not including in PC_In_Buf[] */
-			
-		
-			if(strstr(PC_In_Buf,"C")){							// "Command type" form PC
+				
+			if(strstr(PC_In_Buf,"C")){				// "Command type" form PC
 				
 				ACUD_ID_3Dec_Ptr = strstr(PC_In_Buf,ACUD_ID_3Dec); 
-				Command_Ptr = ACUD_ID_3Dec_Ptr+3 ;				// point to start position of Cmd
+				Command_Ptr = ACUD_ID_3Dec_Ptr+3 ;	// point to start position of Cmd
 
-				if(strstr(Command_Ptr,"CI")) {					// Check In, Turn On Cooler
+				if(strstr(Command_Ptr,"CI")) {		
+				/* Card absent, Turn On Air */
 					
-					ACUD.Air_Auto_Flg = 1;
-					Temperature_Setting = 23;					// Default=23			
+					Minute_Counter = 0; 
+					/* To impel air become on by Air_Manipulate() */
 					
-					PC_C_Event_Reply(Command_Ptr);	
+					Temperature_Setting = 23;		// Default=23			
+					PC_C_Event_Reply(Command_Ptr);	// Reply same Cmd to PC which received from PC
 				} 
-				else if(strstr(Command_Ptr,"MO")) {				// Check out
+				else if(strstr(Command_Ptr,"MO")) {	
+				/* Card absent, Turn Off Air */
 					
-					ACUD.Air_Off_Flg = 1;
-
-					PC_C_Event_Reply(Command_Ptr);		
+					Minute_Counter = Checkout_Air_Period; 
+					/* To impel air become off by Air_Manipulate() */
+					
+					Temperature_Setting = 26;		// Default=23
+					PC_C_Event_Reply(Command_Ptr);	// Reply same Cmd to PC which received from PC	
+					/* Reply same Cmd to PC which received from PC*/
 				}
-				else if(strstr(Command_Ptr,"CO")) {				// Trun On Cooler
+				else if(strstr(Command_Ptr,"CO")) {	
+				/* Card present, Turn On Air */
 	
 					ACUD.Air_Auto_Flg = 1;
-					Temperature_Setting = 23;					// Default=23							
+					/* To impel air become auto by Air_Manipulate() */
 					
-					PC_C_Event_Reply(Command_Ptr);	
+					Temperature_Setting = 23;		// Default=23							
+					PC_C_Event_Reply(Command_Ptr);	// Reply same Cmd to PC which received from PC
+					/* Reply same Cmd to PC which received from PC*/
 				}
-				else if(strstr(Command_Ptr,"CC")) {				// Turn Off Cooler
-								
-					ACUD.Air_Off_Flg = 1;
+				else if(strstr(Command_Ptr,"CC")) {	// Turn Off Cooler
 						
-					PC_C_Event_Reply(Command_Ptr);		
+					Minute_Counter = Checkout_Air_Period; 	
+					/* To impel air become off by Air_Manipulate() */
+					
+					Temperature_Setting = 26;		// Default=23
+					PC_C_Event_Reply(Command_Ptr);	
+					/* Reply same Cmd to PC which received from PC*/
 				}
-				else if(strstr(Command_Ptr,"AC")) {				// Become Cooler mode
+				else if(strstr(Command_Ptr,"AC")) {	// Become Cooler mode
 					
 					/* No further action need */
 					
-					PC_C_Event_Reply(Command_Ptr);	
+					PC_C_Event_Reply(Command_Ptr);	// Reply same Cmd to PC which received from PC
+					/* Reply same Cmd to PC which received from PC*/
 				}
-				else if(strstr(Command_Ptr,"AH")) {				// Become Heater mode
+				else if(strstr(Command_Ptr,"AH")) {	// Become Heater mode
 					
 					/* No further action need */
 					
-					PC_C_Event_Reply(Command_Ptr);	
-
+					PC_C_Event_Reply(Command_Ptr);	// Reply same Cmd to PC which received from PC
+					/* Reply same Cmd to PC which received from PC*/
 				}
-				else if(strstr(Command_Ptr,"ST")) {				// ST Temperature setting
+				else if(strstr(Command_Ptr,"ST")) {	// ST Temperature setting
 					
-					Tempe_Ptr = Command_String + 2;				// point to start position of Temperature		
+					Tempe_Ptr = Command_String + 2;	// point to start position of Temperature		
 					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);	
 						
 					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
-				else if(strstr(Command_Ptr,"IT")) {				// Key In Temperature setting
+				else if(strstr(Command_Ptr,"IT")) {	// Key In Temperature setting
 					
-					Tempe_Ptr = Command_String + 2;				// point to start position of Temperature		
+					Tempe_Ptr = Command_String + 2;	// point to start position of Temperature		
 					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);	
 						
 					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
-				else if(strstr(Command_Ptr,"OT")) {				// Key Out Temperature setting
+				else if(strstr(Command_Ptr,"OT")) {	// Key Out Temperature setting
 				
-					Tempe_Ptr = Command_String + 2;				// point to start position of Temperature		
+					Tempe_Ptr = Command_String + 2;	// point to start position of Temperature		
 					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);	
 					
 					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
-				else if(strstr(Command_Ptr,"RU")) {				// Auto
+				else if(strstr(Command_Ptr,"RU")) {	// Auto
 					
 					ACUD.Air_Auto_Flg = 1;
-					Tempe_Ptr = Command_String + 2; 			// point to start position of Temperature
+					Tempe_Ptr = Command_String + 2; // point to start position of Temperature
 					Checkout_Air_Period = DecStr2HexInt(&Tempe_Ptr);
 						
 					PC_C_Event_Reply(Command_ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
 				
-
-			else if ( findstr(PC_In_Buf,"DO")){	// "Confirm type" form PC
+			else if ( findstr(PC_In_Buf,"DO")){		// "Confirm type" form PC
 			
-				if(strstr(PC_In_Buf,Command_Ptr) {				// 
+				if(strstr(PC_In_Buf,Command_Ptr) {				 
 						
-			
 					PC_D_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
-			
-
 			}
 		}
 		/* ACUD_ID_3Dec is not match */
@@ -1091,7 +1018,7 @@ void ACP_StateEvent(){
 			else {
 			/* anknowledge back to ACP failure */	
 				Comm.ACP_Rx_Ready_Flg = 0;
-				/* Ignore this failure. assuming command will be resend again by PC site */
+				/* Ignore this failure. assuming command will be resent again by PC site */
 			
 			}
 	}
@@ -1114,50 +1041,50 @@ float Temperature_delta
 	*/
 	
 	if(Temperature_delta > 3) {
-		Air_Cooler_Pin = 1;							// Turn cooler on		
-		Air_Heater_Pin = 0;							// Turn Herter off
+		Air_Cooler_Pin = 1;						// Turn cooler on		
+		Air_Heater_Pin = 0;						// Turn Herter off
 		Fan_L_Pin = 0;								 
 		Fan_M_Pin = 0;								
 		Fan_H_Pin = 1;								 
 	}
 	else if(Temperature_delta > 2) {
-		Air_Cooler_Pin = 1;							// Turn cooler on		
-		Air_Heater_Pin = 0;							// Turn Herter off
+		Air_Cooler_Pin = 1;						// Turn cooler on		
+		Air_Heater_Pin = 0;						// Turn Herter off
 		Fan_L_Pin = 0;								
 		Fan_M_Pin = 1;								
 		Fan_H_Pin = 0;
 	}
 	else if(Temperature_delta > 1) {
-		Air_Cooler_Pin = 1;							// Turn cooler on		
-		Air_Heater_Pin = 0;							// Turn Herter off
+		Air_Cooler_Pin = 1;						// Turn cooler on		
+		Air_Heater_Pin = 0;						// Turn Herter off
 		Fan_L_Pin = 1;								
 		Fan_M_Pin = 0;								
 		Fan_H_Pin = 0;	
 	}
 	else if( Temperature_delta < 0.25 && Temperature_delta > -0.25 ) {
-		Air_Cooler_Pin = 0;							// Turn cooler on		
-		Air_Heater_Pin = 0;							// Turn Herter off
+		Air_Cooler_Pin = 0;						// Turn cooler on		
+		Air_Heater_Pin = 0;						// Turn Herter off
 		Fan_L_Pin = 1;								
 		Fan_M_Pin = 0;								
 		Fan_H_Pin = 0;	
 	}
 	else if(Temperature_delta < -1 ) {
-		Air_Cooler_Pin = 0;							// Turn cooler on		
-		Air_Heater_Pin = 1;							// Turn Herter off
+		Air_Cooler_Pin = 0;						// Turn cooler on		
+		Air_Heater_Pin = 1;						// Turn Herter off
 		Fan_L_Pin = 1;								
 		Fan_M_Pin = 0;								
 		Fan_H_Pin = 0;	
 	}
 	else if(Temperature_delta < -2 ) {
-		Air_Cooler_Pin = 0;							// Turn cooler on		
-		Air_Heater_Pin = 1;							// Turn Herter off
+		Air_Cooler_Pin = 0;						// Turn cooler on		
+		Air_Heater_Pin = 1;						// Turn Herter off
 		Fan_L_Pin = 0;								
 		Fan_M_Pin = 1;								
 		Fan_H_Pin = 0;	
 	}
 	else if(Temperature_delta < -3 ) {
-		Air_Cooler_Pin = 0;							// Turn cooler off		
-		Air_Heater_Pin = 1;							// Turn Herter on
+		Air_Cooler_Pin = 0;						// Turn cooler off		
+		Air_Heater_Pin = 1;						// Turn Herter on
 		Fan_L_Pin = 0;								
 		Fan_M_Pin = 0;								
 		Fan_H_Pin = 1;	
@@ -1168,12 +1095,12 @@ Air_Menual_Control(){
 	
 	if (ACUD.Air_Cool_Flg ) {
 	/* Cooler */
-		Air_Heater_Pin = 0;							// Turn Herter off
+		Air_Heater_Pin = 0;						// Turn Herter off
 		if( Temperature_Reality > Temperature_Setting ){
-			Air_Cooler_Pin = 1;							// Turn cooler on			
+			Air_Cooler_Pin = 1;					// Turn cooler on			
 		}
 		else {
-			Air_Cooler_Pin = 0;							// Turn cooler off		
+			Air_Cooler_Pin = 0;					// Turn cooler off		
 		}
 		switch(FAN_Speed)
 			case 0:
@@ -1192,12 +1119,12 @@ Air_Menual_Control(){
 	}	
 	else {
 	/* Heater */	
-		Air_Cooler_Pin = 0;							// Turn cooler off		
+		Air_Cooler_Pin = 0;						// Turn cooler off		
 		if( Temperature_Reality > Temperature_Setting ){
-			Air_Heater_Pin = 0;							// Turn Herter off
+			Air_Heater_Pin = 0;					// Turn Herter off
 		}
 		else {
-			Air_Heater_Pin = 1;							// Turn Herter off
+			Air_Heater_Pin = 1;					// Turn Herter off
 		}
 
 		switch(FAN_Speed)
@@ -1222,13 +1149,10 @@ Air_Menual_Control(){
 /* Aircondition manipulate */
 void Air_Manipulate(){
 	
-	// ACUD.Air_Auto_Flg need to be processed
-	
 	if(ACUD.Card_Exist_Flg){
 	/* Card_In_Flg will be handled in IIMER0_NmS() interrupt 1 */
-	
-	/* Card present */	
 		
+	/* Card present */	
 		if(ACUD.Air_Auto_Flg){
 		/* Performing Auto Mode */
 			Air_Auto_Control();
@@ -1240,20 +1164,15 @@ void Air_Manipulate(){
 	}
 	else {	
 	/* Card absent */
-	
 		if(Minute_Counter < Checkout_Air_Period){
-			
 			Air_Auto_Control();
 		} 
 		else if(Minute_Counter < 60){
-			
-				
-			Air_Cooler_Pin = 0;							// Turn cooler off		
-			Air_Heater_Pin = 0; 						// Turn Herter off
-			Fan_L_Pin = 0;								// Turn Fan off
+			Air_Cooler_Pin = 0;					// Turn cooler off		
+			Air_Heater_Pin = 0; 				// Turn Herter off
+			Fan_L_Pin = 0;						// Turn Fan off
 			Fan_M_Pin = 0;								
-			Fan_H_Pin = 0;					
-				
+			Fan_H_Pin = 0;								
 			} 
 			else {
 				Minute_Counter = 0;
