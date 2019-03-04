@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W093  H1530
+// Ver : W101  H1615
 
 // on going: 
 
@@ -28,8 +28,8 @@ signed short [int]		16		2		-32768 — +32767
 unsigned short [int]	16		2		0 — 65535
 signed int				16		2		-32768 — +32767
 unsigned int			16		2		0 — 65535
-signed long int			32		4		-2147483648 — +2147483647
-unsigned long int		32		4		0 — 4294967295
+signed long [int]		32		4		-2147483648 — +2147483647
+unsigned long [int]		32		4		0 — 4294967295
 float					32		4		±1.175494E-38 — ±3.402823E+38
 double					32		4		±1.175494E-38 — ±3.402823E+38
 sbit					1	 			0 or 1
@@ -150,8 +150,8 @@ char 	PC_Out_Buf[PC_Out_Buf_Max];
 sbit 	PC_485Tx   		= P3^2;					// sbit INT0    = 0xB2;			// UART TXD
 sbit 	UART_TxD1 		= P3^1;					// sbit TXD     = 0xB1;			// UARD RXD
 sbit 	UART_RxD1 		= P3^0;					// sbit RXD     = 0xB0;
-
-
+char	Indiv_To_PC[5];							// Individual data array to PC					
+int 	*ACUD_ID_3Dec;
 /* Declare related to ACP */
 // related to Handler 
 #define ACP_In_Buf_Max 			5				// ***** Need to be confirmed
@@ -277,7 +277,7 @@ void TIMER0_Ten_mS() interrupt 1 {				// Timer0 INT vector=000Bh
 		ACUD.Temp_Rd_Flg = 1;					// Room Temperature detect
 	}
 	if(Ten_mS_Counter == 6000){					// 1 Minute
-		Minute_Counter++
+		Minute_Counter++;
 		Ten_mS_Counter = 0;						// Reset 10mS_Counter
 	}
 }
@@ -626,7 +626,7 @@ void ACP_Rx() interrupt 2 {
 
 // ##### Temperture Reading: ADC AD7911
 void ADC_Init(){
-/* ADC AD7911 */
+/* ADC AD7911 
 // a minimum of 14 serial clock cycles, respectively, are needed 
 // to complete the conversion and access the complete conversion result.
 //
@@ -677,7 +677,7 @@ float ADC_Rd(){									// n=10 or 12, n bits convert resolution
 		ADC_Data <<= 1 ;					// Left shift
 	}
 	ConvertedVolt = ConvertedVolt * 5 /(2^10 - 1);
-	Comm.ADC_Rd_Busy_Flg = 0;
+	// Comm.ADC_Rd_Busy_Flg = 0;
 	
 	return ConvertedVolt;
 }
@@ -734,13 +734,13 @@ int DecStr2HexInt(int *Str){
 	int I;
 	int temp;
 	
-	I = *str;
+	I = *Str;
 	I = (I*10)/16;
 	I = I << 1;									// Left rotate 
 	temp = (I*10)%16;							// 
-	I = I+temp;
+	I = I + temp;
 	temp = *(Str+1);
-	I = I+temp;
+	I = I + temp;
 
 	return I;
 }
@@ -751,7 +751,7 @@ void ACUD_Init(){
 	ACUD_ID_Hex = P2;	
 	Checkout_Air_Period = 10;					// 10-60min in an hour
 	Minute_Counter = 0;
-	ACUD.Air_On_Flg = 0;
+	//ACUD.Air_On_Flg = 0;
 	ACUD.Air_Auto_Flg = 0;
 	Temperature_Setting = 26;					// Checkout Default = 26 degree C
 	Temperature_Reality = 26;
@@ -805,10 +805,10 @@ void System_Init(){
 
 
 
-PC_C_Event_Reply(chat* Cmd){
-	bool 	Resp;
+PC_C_Event_Reply(char* Cmd){
+	int 	Resp;
 /* Reply back to PC */
-	strcopy(Indiv_To_PC,"A");
+	strcpy(Indiv_To_PC,"A");
 	strcat(Indiv_To_PC,ACUD_ID_3Dec);
 	strcat(Indiv_To_PC,Cmd);					
 	strcat(Indiv_To_PC,Enter);
@@ -830,10 +830,10 @@ PC_C_Event_Reply(chat* Cmd){
 }
 
 
-PC_D_Event_Reply(chat* Cmd){
-	bool 	Resp;
+PC_D_Event_Reply(char* Cmd){
+	int 	Resp;
 /* Reply back to PC */
-	strcopy(Indiv_To_PC,"DONE");
+	strcpy(Indiv_To_PC,"DONE");
 	strcat(Indiv_To_PC,ACUD_ID_3Dec);					
 	strcat(Indiv_To_PC,Enter);
 	/* "Enter" need to be included */
@@ -864,7 +864,7 @@ void PC_StateEvent(){
 	int     *ACUD_ID_3Dec_Ptr						// Point to ID start position
 	char 	*Command_Ptr;							// point to Command start position
 	int		*Tempe_Ptr;								// Point to temperature start position
-	char	Indiv_To_PC[5];							// Individual data array to PC					
+//	char	Indiv_To_PC[5];							// Individual data array to PC					
 	/* Using array to instead of pointer to reserve memory firmdly, when implementing strcpy(), strcat() */
 
 	if(Comm.PC_Rx_Ready_Flg){
@@ -990,7 +990,7 @@ void ACP_StateEvent(){
 
 	char 	Indiv_To_ACP_[5]								// Individual data array to ACP	
 	/* Using array to instead of pointer to reserve memory firmdly, when implementing strcpy(), strcat() */
-	bool 	resp
+	bool 	Resp
 	
 
 	if(Comm.ACP_Rx_Ready_Flg){				
