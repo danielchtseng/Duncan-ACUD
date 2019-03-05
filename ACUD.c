@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W101  H1615
+// Ver : W102  H1035
 
 // on going: 
 
@@ -152,6 +152,8 @@ sbit 	UART_TxD1 		= P3^1;					// sbit TXD     = 0xB1;			// UARD RXD
 sbit 	UART_RxD1 		= P3^0;					// sbit RXD     = 0xB0;
 char	Indiv_To_PC[5];							// Individual data array to PC					
 int 	*ACUD_ID_3Dec;
+
+
 /* Declare related to ACP */
 // related to Handler 
 #define ACP_In_Buf_Max 			5				// ***** Need to be confirmed
@@ -165,7 +167,7 @@ sbit 	ACP_RxD0		= P3^7;					// sbit RD   	= 0xB7;			// RD
 sbit 	ACP_TxD0		= P3^6;					// sbit WR      = 0xB6;			// WR
 sbit 	ACP_485Tx		= P3^5;					// sbit T1      = 0xB5;			// T1
 sbit 	ACP_INT1		= P3^3;					// sbit INT1    = 0xB3;			// INT0, UART 
-
+char 	Indiv_To_ACP_[5]						// Individual data array to ACP	
 
 /* Declare related to ADC */
 unsigned int   	ADC_ConvertedData;				// 2 bytes
@@ -826,11 +828,11 @@ PC_C_Event_Reply(char* Cmd){
 		/* Ignore this failure. assuming command will be 
 		   resend again by PC site */
 		Comm.PC_Rx_Ready_Flg = 0;
-
+	}
 }
 
 
-PC_D_Event_Reply(char* Cmd){
+PC_D_Event_Reply(){
 	int 	Resp;
 /* Reply back to PC */
 	strcpy(Indiv_To_PC,"DONE");
@@ -850,7 +852,7 @@ PC_D_Event_Reply(char* Cmd){
 		/* Ignore this failure. assuming command will be 
 		   resend again by PC site */
 		Comm.PC_Rx_Ready_Flg = 0;
-
+	}
 }
 
 
@@ -860,8 +862,7 @@ PC_D_Event_Reply(char* Cmd){
 /* PC Event manipulate */
 void PC_StateEvent(){
 	
-	int 	*ACUD_ID_3Dec;
-	int     *ACUD_ID_3Dec_Ptr						// Point to ID start position
+	int     *ACUD_ID_3Dec_Ptr;						// Point to ID start position
 	char 	*Command_Ptr;							// point to Command start position
 	int		*Tempe_Ptr;								// Point to temperature start position
 //	char	Indiv_To_PC[5];							// Individual data array to PC					
@@ -936,7 +937,7 @@ void PC_StateEvent(){
 				}
 				else if(strstr(Command_Ptr,"ST")) {	// ST Temperature setting
 					
-					Tempe_Ptr = Command_String + 2;	// point to start position of Temperature		
+					Tempe_Ptr = Command_Ptr + 2;	// point to start position of Temperature		
 					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);	
 						
 					PC_C_Event_Reply(Command_Ptr);	
@@ -944,7 +945,7 @@ void PC_StateEvent(){
 				}
 				else if(strstr(Command_Ptr,"IT")) {	// Key In Temperature setting
 					
-					Tempe_Ptr = Command_String + 2;	// point to start position of Temperature		
+					Tempe_Ptr = Command_Ptr + 2;	// point to start position of Temperature		
 					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);	
 						
 					PC_C_Event_Reply(Command_Ptr);	
@@ -952,7 +953,7 @@ void PC_StateEvent(){
 				}
 				else if(strstr(Command_Ptr,"OT")) {	// Key Out Temperature setting
 				
-					Tempe_Ptr = Command_String + 2;	// point to start position of Temperature		
+					Tempe_Ptr = Command_Ptr + 2;	// point to start position of Temperature		
 					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);	
 					
 					PC_C_Event_Reply(Command_Ptr);	
@@ -961,68 +962,65 @@ void PC_StateEvent(){
 				else if(strstr(Command_Ptr,"RU")) {	// Auto
 					
 					ACUD.Air_Auto_Flg = 1;
-					Tempe_Ptr = Command_String + 2; // point to start position of Temperature
+					Tempe_Ptr = Command_Ptr + 2; // point to start position of Temperature
 					Checkout_Air_Period = DecStr2HexInt(&Tempe_Ptr);
 						
-					PC_C_Event_Reply(Command_ptr);	
+					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
 				}
-				
-			else if ( findstr(PC_In_Buf,"DO")){		// "Confirm type" form PC
+			}	
+			else if ( strstr(PC_In_Buf,"DO")){		// "Confirm type" form PC
 			
-				if(strstr(PC_In_Buf,Command_Ptr) {				 
+				// if(strstr(PC_In_Buf,Command_Ptr) {				 
 						
-					PC_D_Event_Reply(Command_Ptr);	
+					PC_D_Event_Reply();	
 					/* Reply same Cmd to PC which received from PC*/
 			}
 		}
 		/* ACUD_ID_3Dec is not match */
 		PC_In_Buf[PC_In_Buf_Max] = {0};	
-		Comm.PC_Rx_Ready_Flg = 0
+		Comm.PC_Rx_Ready_Flg = 0;
 	}
 }
 
 
 
+//	/* ACP Event manipulate */
+//	void ACP_StateEvent(){
 
-/* ACP Event manipulate */
-void ACP_StateEvent(){
-
-	char 	Indiv_To_ACP_[5]								// Individual data array to ACP	
-	/* Using array to instead of pointer to reserve memory firmdly, when implementing strcpy(), strcat() */
-	bool 	Resp
-	
-
-	if(Comm.ACP_Rx_Ready_Flg){				
-		
-		if (Strcpm(ACP_In_Buf,"command string 1") = 0) {
-			/* "Enter" was included in ACP_In_Buf  */
-		
-		
-		
-		
-		
-		
-		
-		
-		
-				
-		/* Reply acknowledge back to ACP */
-		
-		
-			Resp = ACP_Tx_Handler(&Indiv_To_ACP)
-			if (Resp == 1)
-			/* anknowledge back to ACP successful */
-				ACP_In_Buf[ACP_In_Buf_Max] = {0};	
-				Comm.ACP_Rx_Ready_Flg = 0
-			else {
-			/* anknowledge back to ACP failure */	
-				Comm.ACP_Rx_Ready_Flg = 0;
-				/* Ignore this failure. assuming command will be resent again by PC site */
+//		//* Using array to instead of pointer to reserve memory firmdly, 
+//		   when implementing strcpy(), strcat() */
+//		int 	Resp;
+//		
+//
+//		if(Comm.ACP_Rx_Ready_Flg){				
 			
-			}
-	}
-}
+//			if (strstr(ACP_In_Buf,"command string 1") = 0) {
+//			//* "Enter" was included in ACP_In_Buf  */
+			
+			
+			
+		
+			
+					
+				//* Reply acknowledge back to ACP */
+			
+			
+//				Resp = ACP_Tx_Handler(&Indiv_To_ACP)
+//				if (Resp == 1) {
+//				//* anknowledge back to ACP successful */
+//					ACP_In_Buf[ACP_In_Buf_Max] = {0};	
+//					Comm.ACP_Rx_Ready_Flg = 0
+//				}
+//				else {
+//				//* anknowledge back to ACP failure */	
+//					Comm.ACP_Rx_Ready_Flg = 0;
+//					//* Ignore this failure. assuming command will be resent again by PC site */
+//				
+//				}
+//			}
+//		}
+//	}
 
 
 
@@ -1183,6 +1181,7 @@ void Air_Manipulate(){
 	
 
 
+
 void WatchDog(){
 	
 		WatchDog_ST ~= WatchDog_ST;				// complement, to produce 10101010....
@@ -1203,6 +1202,8 @@ void WatchDog(){
 	*/
 	
 }
+
+
 
 // ##### Main Program #####
 Main(){
@@ -1258,7 +1259,7 @@ Main(){
 		}
 
 		PC_StateEvent();
-		ACP_StateEvent();
+		// ACP_StateEvent();
 		// ACUD_StateEvent();
 		Air_Manipulate();						// depend on the command in Fan_Status 
 		
@@ -1266,3 +1267,4 @@ Main(){
 		
 	}
 }
+*/
