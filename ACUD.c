@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W102  H1035
+// Ver : W102  H1310
 
 // on going: 
 
@@ -167,7 +167,7 @@ sbit 	ACP_RxD0		= P3^7;					// sbit RD   	= 0xB7;			// RD
 sbit 	ACP_TxD0		= P3^6;					// sbit WR      = 0xB6;			// WR
 sbit 	ACP_485Tx		= P3^5;					// sbit T1      = 0xB5;			// T1
 sbit 	ACP_INT1		= P3^3;					// sbit INT1    = 0xB3;			// INT0, UART 
-char 	Indiv_To_ACP_[5]						// Individual data array to ACP	
+char 	Indiv_To_ACP_[5];						// Individual data array to ACP	
 
 /* Declare related to ADC */
 unsigned int   	ADC_ConvertedData;				// 2 bytes
@@ -594,9 +594,9 @@ void ACP_Rx() interrupt 2 {
 			uS_Delay(104);
 			if (ACP_RxD0 == 1){
 				ACP_R_TEMP |= 1;
-				ACP_R_TEMP << 1;				// ACP_SBUF left shift 1 bit 
+				ACP_R_TEMP <<= 1;				// ACP_SBUF left shift 1 bit 
 			} else {
-				ACP_R_TEMP << 1;				// ACP_SBUF left shift 1 bit 
+				ACP_R_TEMP <<= 1;				// ACP_SBUF left shift 1 bit 
 			} 	
 		}
 		uS_Delay(104);					
@@ -702,11 +702,11 @@ int Hex2Dec(int H){
 }
 
 
-int Dec2Hex( int D){
+int Dec2Hex(int d){
 
+int h;
 
-
-
+	return h;
 }
 
 int *HexInt2ASCIIStr(int i){
@@ -733,16 +733,16 @@ int *HexInt2DecStr(int i){
 
 int DecStr2HexInt(int *Str){					
 	/* string length must be 2 digits */
-	int I;
+	int i;
 	int temp;
 	
-	I = *Str;
-	I = (I*10)/16;
-	I = I << 1;									// Left rotate 
-	temp = (I*10)%16;							// 
-	I = I + temp;
+	i = *Str;
+	i = (I*10)/16;
+	i = i << 1;									// Left rotate 
+	temp = (i*10)%16;							// 
+	i = i + temp;
 	temp = *(Str+1);
-	I = I + temp;
+	i = i + temp;
 
 	return I;
 }
@@ -798,7 +798,7 @@ void System_Init(){
 	/* P3(ACP) In/Out initial */
 	
 	PC_UART_Init();
-	TIMER0__Ten_mS_Init();						// Timer0 10ms 
+	TIMER0_Ten_mS_Init(10);						// Timer0 10ms 
 	ACP_Init();
 	ADC_Init();
 	ACUD_Init();
@@ -807,7 +807,7 @@ void System_Init(){
 
 
 
-PC_C_Event_Reply(char* Cmd){
+void PC_C_Event_Reply(char* Cmd){
 	int 	Resp;
 /* Reply back to PC */
 	strcpy(Indiv_To_PC,"A");
@@ -832,7 +832,7 @@ PC_C_Event_Reply(char* Cmd){
 }
 
 
-PC_D_Event_Reply(){
+void C_D_Event_Reply(){
 	int 	Resp;
 /* Reply back to PC */
 	strcpy(Indiv_To_PC,"DONE");
@@ -1025,9 +1025,9 @@ void PC_StateEvent(){
 
 
 	
-Air_Auto_Control(){
+void Air_Auto_Control(){
 
-float Temperature_delta
+float Temperature_delta;
 
 	Temperature_delta = Temperature_Setting-Temperature_Reality;
 	/* Temperature_Reality will be updated by ADC_Rd() in IIMER0_NmS() interrupt 1
@@ -1089,7 +1089,7 @@ float Temperature_delta
 	}
 }
 
-Air_Menual_Control(){
+void Air_Menual_Control(){
 	
 	if (ACUD.Air_Cool_Flg ) {
 	/* Cooler */
@@ -1100,7 +1100,7 @@ Air_Menual_Control(){
 		else {
 			Air_Cooler_Pin = 0;					// Turn cooler off		
 		}
-		switch(FAN_Speed)
+		switch(FAN_Speed){
 			case 0:
 				Fan_L_Pin = 1;								
 				Fan_M_Pin = 0;								
@@ -1114,6 +1114,7 @@ Air_Menual_Control(){
 				Fan_M_Pin = 0;								
 				Fan_H_Pin = 1;
 			break;
+		}	
 	}	
 	else {
 	/* Heater */	
@@ -1125,7 +1126,7 @@ Air_Menual_Control(){
 			Air_Heater_Pin = 1;					// Turn Herter off
 		}
 
-		switch(FAN_Speed)
+		switch(FAN_Speed){
 			case 0:
 				Fan_L_Pin = 1;								
 				Fan_M_Pin = 0;								
@@ -1139,6 +1140,7 @@ Air_Menual_Control(){
 				Fan_M_Pin = 0;								
 				Fan_H_Pin = 1;
 			break;
+		}
 	}
 }
 
@@ -1150,7 +1152,7 @@ void Air_Manipulate(){
 	if(ACUD.Card_Exist_Flg){
 	/* Card_In_Flg will be handled in IIMER0_NmS() interrupt 1 */
 		
-	/* Card present */	
+		/* Card present */	
 		if(ACUD.Air_Auto_Flg){
 		/* Performing Auto Mode */
 			Air_Auto_Control();
@@ -1171,14 +1173,12 @@ void Air_Manipulate(){
 			Fan_L_Pin = 0;						// Turn Fan off
 			Fan_M_Pin = 0;								
 			Fan_H_Pin = 0;								
-			} 
-			else {
+		} 
+		else {
 				Minute_Counter = 0;
-			}
 		}
 	}
 }	
-	
 
 
 
@@ -1267,4 +1267,3 @@ Main(){
 		
 	}
 }
-*/
