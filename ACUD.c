@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W104  H1500
+// Ver : W104  H1540
 
 // on going: 
 
@@ -150,7 +150,7 @@ char 	PC_Out_Buf[PC_Out_Buf_Max];
 sbit 	PC_485Tx   		= P3^2;					// sbit INT0    = 0xB2;			// UART TXD
 sbit 	UART_TxD1 		= P3^1;					// sbit TXD     = 0xB1;			// UARD RXD
 sbit 	UART_RxD1 		= P3^0;					// sbit RXD     = 0xB0;
-char	Indiv_To_PC[5];							// Individual data array to PC					
+char	idata 	Indiv_To_PC[5];							// Individual data array to PC					
 int 	*ACUD_ID_3Dec;
 
 
@@ -167,7 +167,7 @@ sbit 	ACP_RxD0		= P3^7;					// sbit RD   	= 0xB7;			// RD
 sbit 	ACP_TxD0		= P3^6;					// sbit WR      = 0xB6;			// WR
 sbit 	ACP_485Tx		= P3^5;					// sbit T1      = 0xB5;			// T1
 sbit 	ACP_INT1		= P3^3;					// sbit INT1    = 0xB3;			// INT0, UART 
-char 	Indiv_To_ACP_[5];						// Individual data array to ACP	
+char 	idata	Indiv_To_ACP_[5];						// Individual data array to ACP	
 
 /* Declare related to ADC */
 unsigned int   	ADC_ConvertedData;				// 2 bytes
@@ -425,9 +425,9 @@ void PC_UART_Init(){
 
 }
 
-bool PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){		// Pointer of individual data array (Indiv_To_PC[])
+int PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){		// Pointer of individual data array (Indiv_To_PC[])
 		/* Data in Indiv_To_PC[] including "Enter" as tail */
-	bool Resp;
+	int Resp;
 	int i = 0;
 	char PC_TBUF;
 	
@@ -445,12 +445,12 @@ bool PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){		// Pointer of individual data array (
 		PC_Out_Buf_Index = 0;					// Initial PC_Out_Buf_Index
 		TI=1; 									// Triger UART_ISR() to start UART_Tx 
 		
-		Resp = ture;
+		Resp = 1;
 		return Resp;								// data transmit permit
 	}
 	else {
 	/*  Indiv_To_PC[] does not to port to PC_Out_Buf[] */	
-		Resp = false;
+		Resp = 0;
 		return Resp;								// data transmit deny
 	}
 }
@@ -544,13 +544,13 @@ void ACP_Tx_PhyLayer(){
 	/* For ACP_Tx_Handler(), to allow transmit again over IOSerial */
 }
 
-bool ACP_Tx_Handler(int *Indiv_To_ACP_Ptr){		// Pointer of individual data array(Indiv_To_ACP[])
+int ACP_Tx_Handler(int *Indiv_To_ACP_Ptr){		// Pointer of individual data array(Indiv_To_ACP[])
 	/* Data in Indiv_To_ACP[] including "Enter" as tail */
 	// sbit ACP_RxD0 	= P3^7;					// RD
 	// sbit ACP_TxD0	= P3^6;					// WR
 	// sbit ACP_485Tx   = P3^5;					// T1
 	// sbit ACP_INT1 	= P3^3;					// INT1, connect to pin RxD0
-	bool Resp;
+	int Resp;
 	int i = 0;
 	char ACP_T_TEMP;
 	
@@ -566,11 +566,11 @@ bool ACP_Tx_Handler(int *Indiv_To_ACP_Ptr){		// Pointer of individual data array
 		ACP_Out_Buf[i]=*Indiv_To_ACP_Ptr;		// Put "Enter" into ACP_Out_Buf[]
 		ACP_Out_Buf_Index = 0;					// Initial PC_Out_Buf_Index
 		ACP_Tx_PhyLayer();						// Call ACP_Tx_PhyLayer() to transmit data via ACP
-		Resp = ture;
+		Resp = 1;
 		return Resp;								// data transmit permit
 	}
 	else {
-		Resp = false;
+		Resp = 0;
 		return Resp;								// data transmit deny
 	}
 }
@@ -737,7 +737,7 @@ int DecStr2HexInt(int *DecStr){
 	int temp;
 	
 	HexInt = *DecStr;
-	HexInt = (i*10)/16;
+	HexInt = (HexInt*10)/16;
 	HexInt = HexInt << 1;									// Left rotate 
 	temp = (HexInt*10)%16;							// 
 	HexInt = HexInt + temp;
@@ -802,7 +802,7 @@ void System_Init(){
 }
 
 void PC_C_Event_Reply(char* Cmd){
-	bool 	Resp;
+	int 	Resp;
 /* Reply back to PC */
 	strcpy(Indiv_To_PC,"A");
 	strcat(Indiv_To_PC,ACUD_ID_3Dec);
@@ -811,9 +811,9 @@ void PC_C_Event_Reply(char* Cmd){
 	/* "Enter" need to be included */
 				
 	Resp = PC_Tx_Handler(&Indiv_To_PC);
-	if(Resp == ture){
+	if(Resp == 1){
 	/* anknowledge back to PC successful */
-		PC_In_Buf[PC_In_Buf_Max] = {0};	
+		PC_In_Buf[PC_In_Buf_Max] = 0;	
 		Comm.PC_Rx_Ready_Flg = 0;
 	}		
 	else {
@@ -826,7 +826,7 @@ void PC_C_Event_Reply(char* Cmd){
 }
 
 void C_D_Event_Reply(){
-	bool 	Resp;
+	int 	Resp;
 /* Reply back to PC */
 	strcpy(Indiv_To_PC,"DONE");
 	strcat(Indiv_To_PC,ACUD_ID_3Dec);					
@@ -834,9 +834,9 @@ void C_D_Event_Reply(){
 	/* "Enter" need to be included */
 				
 	Resp = PC_Tx_Handler(&Indiv_To_PC);
-	if(Resp == ture){
+	if(Resp == 1){
 	/* anknowledge back to PC successful */
-		PC_In_Buf[PC_In_Buf_Max] = {0};	
+		PC_In_Buf[PC_In_Buf_Max] = 0;	
 		Comm.PC_Rx_Ready_Flg = 0;
 	}		
 	else {
@@ -970,7 +970,7 @@ void PC_StateEvent(){
 			}
 		}
 		/* ACUD_ID_3Dec is not match */
-		PC_In_Buf[PC_In_Buf_Max] = {0};	
+		PC_In_Buf[PC_In_Buf_Max] = 0;	
 		Comm.PC_Rx_Ready_Flg = 0;
 	}
 }
@@ -982,7 +982,7 @@ void PC_StateEvent(){
 
 //		//* Using array to instead of pointer to reserve memory firmdly, 
 //		   when implementing strcpy(), strcat() */
-//		bool 	Resp;
+//		int 	Resp;
 //		
 //
 //		if(Comm.ACP_Rx_Ready_Flg){				
@@ -999,7 +999,7 @@ void PC_StateEvent(){
 			
 			
 //				Resp = ACP_Tx_Handler(&Indiv_To_ACP)
-//				if (Resp == ture) {
+//				if (Resp == 1) {
 //				//* anknowledge back to ACP successful */
 //					ACP_In_Buf[ACP_In_Buf_Max] = {0};	
 //					Comm.ACP_Rx_Ready_Flg = 0
