@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W102  H1310
+// Ver : W104  H0830
 
 // on going: 
 
@@ -216,6 +216,15 @@ sbit 	WatchDog_ST  	= P3^4;					// sbit T0      = 0xB4;	        // T0
 
 
 
+/* Interrupt Vector(中斷向量)
+		| INT Number |  Description  |	Address |
+		|      0     |EXTERNAL INT  0|	 0003h  |   
+	    |      1	 |TIMER/COUNTER 0|	 000Bh  |
+	    |      2	 |EXTERNAL INT  1|	 0013h  |
+		|	   3	 |TIMER/COUNTER 1|	 001Bh  |
+		|      4	 |SERIAL PORT	 |   0023h  |
+		|      5	 |TIMER/COUNTER 2|	 002Bh  | 
+*/
 
 
 
@@ -223,14 +232,6 @@ sbit 	WatchDog_ST  	= P3^4;					// sbit T0      = 0xB4;	        // T0
 // @@@@@@@@@@@@@@@      Program      @@@@@@@@@@@@@@@
 
 
-/* Interrupt Vector(中斷向量)
-		| INT Number |  Description  |	Address |
-		|      0     | EXTERNAL INT0 |	 0003h  |   
-	    |      1	 |TIMER/COUNTER 0|	 000Bh  |
-	    |      2	 | EXTERNAL INT 1|	 0013h  |
-		|	   3	 |TIMER/COUNTER 1|	 001Bh  |
-		|      4	 |  SERIAL PORT	 |   0023h  |
-		|      5	 |TIMER/COUNTER 2|	 002Bh  | */
 
 // ##### Period Timer	
 void TIMER0_Ten_mS_Init(int N){					// 10*mS timer
@@ -284,10 +285,10 @@ void TIMER0_Ten_mS() interrupt 1 {				// Timer0 INT vector=000Bh
 	}
 }
 
-void mS_Delay(int N){							// Delay N*ms 
+void mS_Delay(int m){							// Delay m*ms 
 	
-	int i,j;									// 宣告整數變數i,j,N 
-	for (i=0;i<N;i++)							// 計數N次,延遲 N*1ms 
+	int i,j;									// 宣告整數變數i,j
+	for (i=0;i<m;i++)							// 計數N次,延遲 m*1ms 
 	//#if Fosc == 22.1184							// 延遲 t*1ms @22.1184MHz
 		for (j=0;j<1600;j++);
 	//	;										// means NOP ;
@@ -296,7 +297,7 @@ void mS_Delay(int N){							// Delay N*ms
 	//#endif
 }
 
-void uS_Delay (int N){							// Delay N*us, 52us or 104us
+void uS_Delay (int u){							// Delay u*us, 52us or 104us
 
 
 
@@ -424,7 +425,7 @@ void PC_UART_Init(){
 
 }
 
-int PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){		// Pointer of individual data array (Indiv_To_PC[])
+bool PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){		// Pointer of individual data array (Indiv_To_PC[])
 		/* Data in Indiv_To_PC[] including "Enter" as tail */
 	int i = 0;
 	char PC_TBUF;
@@ -503,7 +504,6 @@ void ACP_Init(){
 	/* EX1 will be enabled in main() */
 }
 
-
 void ACP_Tx_PhyLayer(){									
 	/* ACP_Out_Buf[] had been prepared ready and call by ACP_Tx_Handler(),
 	   "Enter" char no neet to send to ACP */
@@ -541,8 +541,7 @@ void ACP_Tx_PhyLayer(){
 	/* For ACP_Tx_Handler(), to allow transmit again over IOSerial */
 }
 
-
-int ACP_Tx_Handler(int *Indiv_To_ACP_Ptr){		// Pointer of individual data array(Indiv_To_ACP[])
+bool ACP_Tx_Handler(int *Indiv_To_ACP_Ptr){		// Pointer of individual data array(Indiv_To_ACP[])
 	/* Data in Indiv_To_ACP[] including "Enter" as tail */
 	// sbit ACP_RxD0 	= P3^7;					// RD
 	// sbit ACP_TxD0	= P3^6;					// WR
@@ -570,7 +569,6 @@ int ACP_Tx_Handler(int *Indiv_To_ACP_Ptr){		// Pointer of individual data array(
 		return 0;								// data transmit deny
 	}
 }
-
 
 void ACP_Rx() interrupt 2 {			
 /* EX1 INT, vector=0013h, UART Simulator */
@@ -686,7 +684,6 @@ float ADC_Rd(){									// n=10 or 12, n bits convert resolution
 
 
 
-
 // ##### ACUD
 
 int Hex2Dec(int H){
@@ -701,50 +698,48 @@ int Hex2Dec(int H){
       return Dec;
 }
 
+int Dec2Hex(int Dec){
+int Hex;
 
-int Dec2Hex(int d){
+	/* not impletement yet */
 
-int h;
-
-	return h;
+	return Hex;
 }
 
-int *HexInt2ASCIIStr(int i){
-	int str[3];
-	int* Ptr;
+int *HexInt2ASCIIStr(int HexInt){
+	int AscStr[3];
 	
-	str[0] = i/100+48;							// Hunderd digit
-	str[1] = (i/10)%10+48;						// Ten digit
-	str[2] = i%10+48;							// digit
+	AscStr[0] = HexInt/100+48;					// Hunderd digit
+	AscStr[1] = (HexInt/10)%10+48;				// Ten digit
+	AscStr[2] = HexInt%10+48;					// digit
 	
-	return Ptr;
+	return AscStr;
 }
 
-int *HexInt2DecStr(int i){
-	int str[3];
-	int* Ptr;
+int *HexInt2DecStr(int HexInt){
+	int DecStr[3];
 	
-	str[0] = i/100;								// Hunderd digit
-	str[1] = (i/10)%10;							// Ten digit
-	str[2] = i%10;	
-	// digit
-	return Ptr;
+	DecStr[0] = HexInt/100;						// Hunderd digit
+	DecStr[1] = (HexInt/10)%10;					// Ten digit
+	DecStr[2] = HexInt%10;						// digit
+	
+	return DecStr;
 }
 
-int DecStr2HexInt(int *Str){					
+int DecStr2HexInt(int *DecStr){					
 	/* string length must be 2 digits */
-	int i;
+	int HexInt;
 	int temp;
 	
-	i = *Str;
-	i = (I*10)/16;
-	i = i << 1;									// Left rotate 
-	temp = (i*10)%16;							// 
-	i = i + temp;
-	temp = *(Str+1);
-	i = i + temp;
+	HexInt = *DecStr;
+	HexInt = (i*10)/16;
+	HexInt = HexInt << 1;									// Left rotate 
+	temp = (HexInt*10)%16;							// 
+	HexInt = HexInt + temp;
+	temp = *(DecStr+1);
+	HexInt = HexInt + temp;
 
-	return I;
+	return HexInt;
 }
 
 void ACUD_Init(){
@@ -767,9 +762,6 @@ void ACUD_Init(){
 }
 
 
-
-	
-	
 	
 // ##### System Initialization
 void System_Init(){
@@ -804,11 +796,8 @@ void System_Init(){
 	ACUD_Init();
 }
 
-
-
-
 void PC_C_Event_Reply(char* Cmd){
-	int 	Resp;
+	bool 	Resp;
 /* Reply back to PC */
 	strcpy(Indiv_To_PC,"A");
 	strcat(Indiv_To_PC,ACUD_ID_3Dec);
@@ -831,9 +820,8 @@ void PC_C_Event_Reply(char* Cmd){
 	}
 }
 
-
 void C_D_Event_Reply(){
-	int 	Resp;
+	bool 	Resp;
 /* Reply back to PC */
 	strcpy(Indiv_To_PC,"DONE");
 	strcat(Indiv_To_PC,ACUD_ID_3Dec);					
@@ -854,7 +842,6 @@ void C_D_Event_Reply(){
 		Comm.PC_Rx_Ready_Flg = 0;
 	}
 }
-
 
 
 
@@ -990,7 +977,7 @@ void PC_StateEvent(){
 
 //		//* Using array to instead of pointer to reserve memory firmdly, 
 //		   when implementing strcpy(), strcat() */
-//		int 	Resp;
+//		bool 	Resp;
 //		
 //
 //		if(Comm.ACP_Rx_Ready_Flg){				
@@ -1181,10 +1168,10 @@ void Air_Manipulate(){
 }	
 
 
-
+/* Watchdog */
 void WatchDog(){
 	
-		WatchDog_ST ~= WatchDog_ST;				// complement, to produce 10101010....
+		WatchDog_ST =~ WatchDog_ST;				// complement, to produce 10101010....
 	
 	/* The ST input can be derived from microprocessor address signals, 
 	   data signals, and/or control signals. When the microprocessor is 
@@ -1206,7 +1193,7 @@ void WatchDog(){
 
 
 // ##### Main Program #####
-Main(){
+main(){
 
 	IE = 0x00;									// Set all interrupt disable
 	
