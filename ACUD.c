@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W104  H0830
+// Ver : W104  H1500
 
 // on going: 
 
@@ -427,6 +427,7 @@ void PC_UART_Init(){
 
 bool PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){		// Pointer of individual data array (Indiv_To_PC[])
 		/* Data in Indiv_To_PC[] including "Enter" as tail */
+	bool Resp;
 	int i = 0;
 	char PC_TBUF;
 	
@@ -444,11 +445,13 @@ bool PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){		// Pointer of individual data array (
 		PC_Out_Buf_Index = 0;					// Initial PC_Out_Buf_Index
 		TI=1; 									// Triger UART_ISR() to start UART_Tx 
 		
-		return 1;								// data transmit permit
+		Resp = ture;
+		return Resp;								// data transmit permit
 	}
 	else {
 	/*  Indiv_To_PC[] does not to port to PC_Out_Buf[] */	
-		return 0;								// data transmit deny
+		Resp = false;
+		return Resp;								// data transmit deny
 	}
 }
 
@@ -547,7 +550,7 @@ bool ACP_Tx_Handler(int *Indiv_To_ACP_Ptr){		// Pointer of individual data array
 	// sbit ACP_TxD0	= P3^6;					// WR
 	// sbit ACP_485Tx   = P3^5;					// T1
 	// sbit ACP_INT1 	= P3^3;					// INT1, connect to pin RxD0
-	
+	bool Resp;
 	int i = 0;
 	char ACP_T_TEMP;
 	
@@ -563,10 +566,12 @@ bool ACP_Tx_Handler(int *Indiv_To_ACP_Ptr){		// Pointer of individual data array
 		ACP_Out_Buf[i]=*Indiv_To_ACP_Ptr;		// Put "Enter" into ACP_Out_Buf[]
 		ACP_Out_Buf_Index = 0;					// Initial PC_Out_Buf_Index
 		ACP_Tx_PhyLayer();						// Call ACP_Tx_PhyLayer() to transmit data via ACP
-		return 1;								// data transmit permit
+		Resp = ture;
+		return Resp;								// data transmit permit
 	}
 	else {
-		return 0;								// data transmit deny
+		Resp = false;
+		return Resp;								// data transmit deny
 	}
 }
 
@@ -806,7 +811,7 @@ void PC_C_Event_Reply(char* Cmd){
 	/* "Enter" need to be included */
 				
 	Resp = PC_Tx_Handler(&Indiv_To_PC);
-	if(Resp == 1){
+	if(Resp == ture){
 	/* anknowledge back to PC successful */
 		PC_In_Buf[PC_In_Buf_Max] = {0};	
 		Comm.PC_Rx_Ready_Flg = 0;
@@ -829,7 +834,7 @@ void C_D_Event_Reply(){
 	/* "Enter" need to be included */
 				
 	Resp = PC_Tx_Handler(&Indiv_To_PC);
-	if(Resp == 1){
+	if(Resp == ture){
 	/* anknowledge back to PC successful */
 		PC_In_Buf[PC_In_Buf_Max] = {0};	
 		Comm.PC_Rx_Ready_Flg = 0;
@@ -994,7 +999,7 @@ void PC_StateEvent(){
 			
 			
 //				Resp = ACP_Tx_Handler(&Indiv_To_ACP)
-//				if (Resp == 1) {
+//				if (Resp == ture) {
 //				//* anknowledge back to ACP successful */
 //					ACP_In_Buf[ACP_In_Buf_Max] = {0};	
 //					Comm.ACP_Rx_Ready_Flg = 0
