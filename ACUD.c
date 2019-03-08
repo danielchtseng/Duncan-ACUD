@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W105  H0830
+// Ver : W105  H1330
 
 // on going: 
 
@@ -12,7 +12,7 @@
 #include <AT89X51.h>
 #include <string.h>
 #include <math.h>
-#include <stdbool.h>
+//#include <stdbool.h>
 // #include <stdlib.h>
 
 
@@ -143,36 +143,45 @@ unsigned short 	Ten_mS_Counter;					// 2 bytes: 0-65535
 #define PC_In_Buf_Max 		5					// ***** Need to be confirmed
 #define PC_Out_Buf_Max		5					// ***** Need to be confirmed
 #define Enter				0x13				// ASCII 13: carry Return
-sbit 			PC_485Tx   		= P3^2;					// sbit INT0    = 0xB2;			// UART TXD
-sbit 			UART_TxD1 		= P3^1;					// sbit TXD     = 0xB1;			// UARD RXD
-sbit 			UART_RxD1 		= P3^0;					// sbit RXD     = 0xB0;
-int 	idata 	PC_In_Buf_Index;
-int 	idata	PC_Out_Buf_Index;
-char 	idata	PC_In_Buf[PC_In_Buf_Max];
-char 	idata	PC_Out_Buf[PC_Out_Buf_Max];
-char	idata	Indiv_To_PC[5];							// Individual data array to PC					
-int 	idata	*ACUD_ID_3Dec;
+int 	PC_In_Buf_Index;
+int 	PC_Out_Buf_Index;
+char 	PC_In_Buf[PC_In_Buf_Max];
+char 	PC_Out_Buf[PC_Out_Buf_Max];
+sbit 	PC_485Tx   		= P3^2;					// sbit INT0    = 0xB2;			// UART TXD
+sbit 	UART_TxD1 		= P3^1;					// sbit TXD     = 0xB1;			// UARD RXD
+sbit 	UART_RxD1 		= P3^0;					// sbit RXD     = 0xB0;
+char	idata 	Indiv_To_PC[5];							// Individual data array to PC					
+int 	*ACUD_ID_3Dec;
 
+	
+#ifndef MYBOOLEAN_H
+#define MYBOOLEAN_H
+
+#define false 0
+#define true 1
+typedef int bool; // or #define bool int
+
+#endif	
 
 /* Declare related to ACP */
 // related to Handler 
 #define ACP_In_Buf_Max 			5				// ***** Need to be confirmed
 #define ACP_Out_Buf_Max			5				// ***** Need to be confirmed
+int 	ACP_In_Buf_Index;
+int 	ACP_Out_Buf_Index;
+char 	ACP_In_Buf[ACP_In_Buf_Max];
+char 	ACP_Out_Buf[ACP_Out_Buf_Max];
 // Port 3: 
-sbit 			ACP_RxD0		= P3^7;					// sbit RD   	= 0xB7;			// RD
-sbit 			ACP_TxD0		= P3^6;					// sbit WR      = 0xB6;			// WR
-sbit 			ACP_485Tx		= P3^5;					// sbit T1      = 0xB5;			// T1
-sbit 			ACP_INT1		= P3^3;					// sbit INT1    = 0xB3;			// INT0, UART 
-int 	idata	ACP_In_Buf_Index;
-int 	idata	ACP_Out_Buf_Index;
-char 	idata	ACP_In_Buf[ACP_In_Buf_Max];
-char 	idata	ACP_Out_Buf[ACP_Out_Buf_Max];
+sbit 	ACP_RxD0		= P3^7;					// sbit RD   	= 0xB7;			// RD
+sbit 	ACP_TxD0		= P3^6;					// sbit WR      = 0xB6;			// WR
+sbit 	ACP_485Tx		= P3^5;					// sbit T1      = 0xB5;			// T1
+sbit 	ACP_INT1		= P3^3;					// sbit INT1    = 0xB3;			// INT0, UART 
 char 	idata	Indiv_To_ACP_[5];						// Individual data array to ACP	
 
 /* Declare related to ADC */
-unsigned int   	idata	ADC_ConvertedData;				// 2 bytes
-int 			idata	ConvertedData;		
-int     		idata	ADC_Data;
+unsigned int   	ADC_ConvertedData;				// 2 bytes
+int 			ConvertedData;		
+int     		ADC_Data;
 			 
 // Port 1: 
 // ADC: SPI(Serial Peripheral Interface) Simulator
@@ -183,6 +192,12 @@ sbit 	ADC_DO_Pin		= P1^0;
 
 
 /* Declare related to ACUD */
+int		ACUD_ID_Hex;
+float 	Temperature_Setting;
+float	Temperature_Reality;
+int		Checkout_Air_Period;					// 10-60min in an hour
+int     Minute_Counter;
+int     FAN_Speed;								// 0:L, 1:M,  2:H
 // Port 0: 
 sbit 	Fan_H_Pin	    = P0^0;					// Fan speed 
 sbit 	Fan_M_Pin	 	= P0^1;					// Fan speed 
@@ -193,12 +208,6 @@ sbit 	Card_Det_Pin  	= P0^5;					// Card detection
 // Port 3:
 sbit 	WatchDog_ST  	= P3^4;					// sbit T0      = 0xB4;	        // T0
 
-int		idata	ACUD_ID_Hex;
-float 	idata	Temperature_Setting;
-float	idata	Temperature_Reality;
-int		idata	Checkout_Air_Period;					// 10-60min in an hour
-int     idata	Minute_Counter;
-int     idata	FAN_Speed;								// 0:L, 1:M,  2:H
 
 //* union {										// union: all variables in union share same memory
 	/* Note: data type must be signed or unsigned */
@@ -239,8 +248,8 @@ void TIMER0_Ten_mS_Init(int N){					// 10*mS timer
 	TMOD &= 0xF0;								// Clear Timer 0 
 	TMOD |= 0x01; 								// Mode 1, 16 bit timer/count mode	
 	
-	TH0 = (65536-(N*1000/(Fosc*1000000/12)))/256;
-	TL0 = (65536-(N*1000/(Fosc*1000000/12)))%256;
+	TH0 = (65536-(N*1000/1843200))/256;
+	TL0 = (65536-(N*1000/1843200))%256;
 	/* The content of TH0 & TL0 is designed to meet 1ms 
 	TR0=1;;										// TCON.TR0=1, Timer 0 start running
 	/* TCON: Related to Timer:
@@ -425,9 +434,9 @@ void PC_UART_Init(){
 
 }
 
-int PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){		// Pointer of individual data array (Indiv_To_PC[])
+bool PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){		// Pointer of individual data array (Indiv_To_PC[])
 		/* Data in Indiv_To_PC[] including "Enter" as tail */
-	int Resp;
+	bool Resp;
 	int i = 0;
 	char PC_TBUF;
 	
@@ -445,12 +454,12 @@ int PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){		// Pointer of individual data array (I
 		PC_Out_Buf_Index = 0;					// Initial PC_Out_Buf_Index
 		TI=1; 									// Triger UART_ISR() to start UART_Tx 
 		
-		Resp = 1;
+		Resp = true;
 		return Resp;								// data transmit permit
 	}
 	else {
 	/*  Indiv_To_PC[] does not to port to PC_Out_Buf[] */	
-		Resp = 0;
+		Resp = false;
 		return Resp;								// data transmit deny
 	}
 }
@@ -544,13 +553,13 @@ void ACP_Tx_PhyLayer(){
 	/* For ACP_Tx_Handler(), to allow transmit again over IOSerial */
 }
 
-int ACP_Tx_Handler(int *Indiv_To_ACP_Ptr){		// Pointer of individual data array(Indiv_To_ACP[])
+bool ACP_Tx_Handler(int *Indiv_To_ACP_Ptr){		// Pointer of individual data array(Indiv_To_ACP[])
 	/* Data in Indiv_To_ACP[] including "Enter" as tail */
 	// sbit ACP_RxD0 	= P3^7;					// RD
 	// sbit ACP_TxD0	= P3^6;					// WR
 	// sbit ACP_485Tx   = P3^5;					// T1
 	// sbit ACP_INT1 	= P3^3;					// INT1, connect to pin RxD0
-	int Resp;
+	bool Resp;
 	int i = 0;
 	char ACP_T_TEMP;
 	
@@ -566,11 +575,11 @@ int ACP_Tx_Handler(int *Indiv_To_ACP_Ptr){		// Pointer of individual data array(
 		ACP_Out_Buf[i]=*Indiv_To_ACP_Ptr;		// Put "Enter" into ACP_Out_Buf[]
 		ACP_Out_Buf_Index = 0;					// Initial PC_Out_Buf_Index
 		ACP_Tx_PhyLayer();						// Call ACP_Tx_PhyLayer() to transmit data via ACP
-		Resp = 1;
+		Resp = true;
 		return Resp;								// data transmit permit
 	}
 	else {
-		Resp = 0;
+		Resp = false;
 		return Resp;								// data transmit deny
 	}
 }
@@ -802,7 +811,7 @@ void System_Init(){
 }
 
 void PC_C_Event_Reply(char* Cmd){
-	int 	Resp;
+	bool 	Resp;
 /* Reply back to PC */
 	strcpy(Indiv_To_PC,"A");
 	strcat(Indiv_To_PC,ACUD_ID_3Dec);
@@ -811,7 +820,7 @@ void PC_C_Event_Reply(char* Cmd){
 	/* "Enter" need to be included */
 				
 	Resp = PC_Tx_Handler(&Indiv_To_PC);
-	if(Resp == 1){
+	if(Resp == true){
 	/* anknowledge back to PC successful */
 		PC_In_Buf[PC_In_Buf_Max] = 0;	
 		Comm.PC_Rx_Ready_Flg = 0;
@@ -826,7 +835,7 @@ void PC_C_Event_Reply(char* Cmd){
 }
 
 void C_D_Event_Reply(){
-	int 	Resp;
+	bool 	Resp;
 /* Reply back to PC */
 	strcpy(Indiv_To_PC,"DONE");
 	strcat(Indiv_To_PC,ACUD_ID_3Dec);					
@@ -834,7 +843,7 @@ void C_D_Event_Reply(){
 	/* "Enter" need to be included */
 				
 	Resp = PC_Tx_Handler(&Indiv_To_PC);
-	if(Resp == 1){
+	if(Resp == true){
 	/* anknowledge back to PC successful */
 		PC_In_Buf[PC_In_Buf_Max] = 0;	
 		Comm.PC_Rx_Ready_Flg = 0;
