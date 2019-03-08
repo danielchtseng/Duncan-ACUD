@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W105  H1330
+// Ver : W105  H1420
 
 // on going: 
 
@@ -107,8 +107,19 @@ sbit 	ET0  	= 0xA9;							// sbit ET0 = 0xA8^1
 sbit 	EX0  	= 0xA8;							// sbit EX0 = 0xA8^0
 */
 
+
+	
+#ifndef MYBOOLEAN_H
+#define MYBOOLEAN_H
+#define false 0
+#define true 1
+typedef int bool; // or #define bool int
+#endif	
+
+
+
 /* Declare related to Timer */
-unsigned short 	Ten_mS_Counter;					// 2 bytes: 0-65535
+unsigned short 	idata		Ten_mS_Counter;					// 2 bytes: 0-65535
 
 /* Bit Field: 是一種省空間的特殊 data member, 可以使用特定幾個 bit 來放 data.
 // The declaration of a bit-field has the following form inside a structure
@@ -143,61 +154,49 @@ unsigned short 	Ten_mS_Counter;					// 2 bytes: 0-65535
 #define PC_In_Buf_Max 		5					// ***** Need to be confirmed
 #define PC_Out_Buf_Max		5					// ***** Need to be confirmed
 #define Enter				0x13				// ASCII 13: carry Return
-int 	PC_In_Buf_Index;
-int 	PC_Out_Buf_Index;
-char 	PC_In_Buf[PC_In_Buf_Max];
-char 	PC_Out_Buf[PC_Out_Buf_Max];
 sbit 	PC_485Tx   		= P3^2;					// sbit INT0    = 0xB2;			// UART TXD
 sbit 	UART_TxD1 		= P3^1;					// sbit TXD     = 0xB1;			// UARD RXD
 sbit 	UART_RxD1 		= P3^0;					// sbit RXD     = 0xB0;
-char	idata 	Indiv_To_PC[5];							// Individual data array to PC					
-int 	*ACUD_ID_3Dec;
+int 			idata		PC_In_Buf_Index;
+int 			idata		PC_Out_Buf_Index;
+char 			idata		PC_In_Buf[PC_In_Buf_Max];
+char 			idata		PC_Out_Buf[PC_Out_Buf_Max];
+char			idata 		Indiv_To_PC[5];							// Individual data array to PC					
+int 			idata 		*ACUD_ID_3Dec;
 
-	
-#ifndef MYBOOLEAN_H
-#define MYBOOLEAN_H
 
-#define false 0
-#define true 1
-typedef int bool; // or #define bool int
-
-#endif	
 
 /* Declare related to ACP */
-// related to Handler 
 #define ACP_In_Buf_Max 			5				// ***** Need to be confirmed
 #define ACP_Out_Buf_Max			5				// ***** Need to be confirmed
-int 	ACP_In_Buf_Index;
-int 	ACP_Out_Buf_Index;
-char 	ACP_In_Buf[ACP_In_Buf_Max];
-char 	ACP_Out_Buf[ACP_Out_Buf_Max];
+
 // Port 3: 
 sbit 	ACP_RxD0		= P3^7;					// sbit RD   	= 0xB7;			// RD
 sbit 	ACP_TxD0		= P3^6;					// sbit WR      = 0xB6;			// WR
 sbit 	ACP_485Tx		= P3^5;					// sbit T1      = 0xB5;			// T1
 sbit 	ACP_INT1		= P3^3;					// sbit INT1    = 0xB3;			// INT0, UART 
-char 	idata	Indiv_To_ACP_[5];						// Individual data array to ACP	
+// related to Handler 
+char 			idata		Indiv_To_ACP_[5];						// Individual data array to ACP	
+int 			idata		ACP_In_Buf_Index;
+int 			idata		ACP_Out_Buf_Index;
+char 			idata		ACP_In_Buf[ACP_In_Buf_Max];
+char 			idata		ACP_Out_Buf[ACP_Out_Buf_Max];
+
 
 /* Declare related to ADC */
-unsigned int   	ADC_ConvertedData;				// 2 bytes
-int 			ConvertedData;		
-int     		ADC_Data;
+// ADC: SPI(Serial Peripheral Interface) Simulator
 			 
 // Port 1: 
-// ADC: SPI(Serial Peripheral Interface) Simulator
 sbit 	ADC_DIN_Pin  	= P1^3;
 sbit 	ADC_SCLK_Pin 	= P1^2;
 sbit 	ADC_CS_Pin   	= P1^1;
 sbit 	ADC_DO_Pin		= P1^0;
+unsigned int   	idata		ADC_ConvertedData;				// 2 bytes
+int 			idata		ConvertedData;		
+int     		idata		ADC_Data;
 
 
 /* Declare related to ACUD */
-int		ACUD_ID_Hex;
-float 	Temperature_Setting;
-float	Temperature_Reality;
-int		Checkout_Air_Period;					// 10-60min in an hour
-int     Minute_Counter;
-int     FAN_Speed;								// 0:L, 1:M,  2:H
 // Port 0: 
 sbit 	Fan_H_Pin	    = P0^0;					// Fan speed 
 sbit 	Fan_M_Pin	 	= P0^1;					// Fan speed 
@@ -207,6 +206,14 @@ sbit 	Air_Heater_Pin	= P0^4;					//
 sbit 	Card_Det_Pin  	= P0^5;					// Card detection
 // Port 3:
 sbit 	WatchDog_ST  	= P3^4;					// sbit T0      = 0xB4;	        // T0
+
+int				idata		ACUD_ID_Hex;
+float 			idata		Temperature_Setting;
+float			idata		Temperature_Reality;
+int				idata		Checkout_Air_Period;					// 10-60min in an hour
+int     		idata		Minute_Counter;
+int     		idata		FAN_Speed;								// 0:L, 1:M,  2:H
+
 
 
 //* union {										// union: all variables in union share same memory
