@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W105  H1420
+// Ver : W105  H1440
 
 // on going: 
 
@@ -443,9 +443,9 @@ void PC_UART_Init(){
 
 bool PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){		// Pointer of individual data array (Indiv_To_PC[])
 		/* Data in Indiv_To_PC[] including "Enter" as tail */
-	bool Resp;
-	int i = 0;
-	char PC_TBUF;
+	bool 		Resp;
+	int idata	i = 0;
+	char idata	PC_TBUF;
 	
 	if(!(Comm.PC_Tx_Busy_Flg)){				    // PC Tx avilable
 	/* Got the rigth to allow data in Indiv_To_PC[] port to PC_Out_Buf[] */
@@ -528,8 +528,8 @@ void ACP_Tx_PhyLayer(){
 	   "Enter" char no neet to send to ACP */
 	/* Comm.ACP_Tx_Busy_Flg had been set in ACP_Tx_Handler() */	
 	
-	int 	i = 0;
-	char	ACP_T_TEMP;
+	int idata	i = 0;
+	char idata	ACP_T_TEMP;
 
 	ACP_T_TEMP = ACP_Out_Buf[ACP_Out_Buf_Index];
 	while (ACP_T_TEMP != Enter){
@@ -567,8 +567,8 @@ bool ACP_Tx_Handler(int *Indiv_To_ACP_Ptr){		// Pointer of individual data array
 	// sbit ACP_485Tx   = P3^5;					// T1
 	// sbit ACP_INT1 	= P3^3;					// INT1, connect to pin RxD0
 	bool Resp;
-	int i = 0;
-	char ACP_T_TEMP;
+	int idata	i = 0;
+	char idata	ACP_T_TEMP;
 	
 	if(!(Comm.ACP_Tx_Busy_Flg)){				// IOSerial Tx avilable
 	/* Got the right to allow data in Indiv_To_ACP[] port to ACP_Out_Buf[] */	
@@ -594,7 +594,7 @@ bool ACP_Tx_Handler(int *Indiv_To_ACP_Ptr){		// Pointer of individual data array
 void ACP_Rx() interrupt 2 {			
 /* EX1 INT, vector=0013h, UART Simulator */
 	
-	char ACP_R_TEMP;							// Same as UART Rx SBUF
+	char idata	ACP_R_TEMP;							// Same as UART Rx SBUF
 	// Tx no need to using interrupt. 
 	// sbit ACP_RxD0 	= P3^7;					// RD
 	// sbit ACP_TxD0	= P3^6;					// WR
@@ -666,7 +666,7 @@ void ADC_Init(){
 // matches up to the channel identifier bit, and the 10-bit conversion 
 // result with MSB provided first, followed by two trailing zeros.
 */
-	int i;
+	int idata	i;
 	ADC_SCLK_Pin = 1;
 	ADC_CS_Pin = 1;
 	ADC_CS_Pin = 0;
@@ -681,8 +681,8 @@ void ADC_Init(){
 }
 
 float ADC_Rd(){									// n=10 or 12, n bits convert resolution
-	int i;
-	float ConvertedVolt = 0;
+	int idata	i;
+	float idata	ConvertedVolt = 0;
 	
 	ADC_DO_Pin = 1;
 	ADC_CS_Pin = 1;
@@ -708,8 +708,8 @@ float ADC_Rd(){									// n=10 or 12, n bits convert resolution
 // ##### ACUD
 
 int Hex2Dec(int H){
-      int Dec, remainder, count = 0;
-	  int decimal_number;
+      int idata	Dec, remainder, count = 0;
+	  int idata	decimal_number;
       while(H > 0){
             remainder = H % 10;
             decimal_number = Dec + remainder * pow(16, count);
@@ -720,7 +720,7 @@ int Hex2Dec(int H){
 }
 
 int Dec2Hex(int Dec){
-int Hex;
+int idata	Hex;
 
 	/* not impletement yet */
 
@@ -728,7 +728,7 @@ int Hex;
 }
 
 int *HexInt2ASCIIStr(int HexInt){
-	int AscStr[3];
+	int idata	AscStr[3];
 	
 	AscStr[0] = HexInt/100+48;					// Hunderd digit
 	AscStr[1] = (HexInt/10)%10+48;				// Ten digit
@@ -738,7 +738,7 @@ int *HexInt2ASCIIStr(int HexInt){
 }
 
 int *HexInt2DecStr(int HexInt){
-	int DecStr[3];
+	int idata	DecStr[3];
 	
 	DecStr[0] = HexInt/100;						// Hunderd digit
 	DecStr[1] = (HexInt/10)%10;					// Ten digit
@@ -749,8 +749,8 @@ int *HexInt2DecStr(int HexInt){
 
 int DecStr2HexInt(int *DecStr){					
 	/* string length must be 2 digits */
-	int HexInt;
-	int temp;
+	int idata	HexInt;
+	int idata	temp;
 	
 	HexInt = *DecStr;
 	HexInt = (HexInt*10)/16;
