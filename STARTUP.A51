@@ -1,4 +1,9 @@
 $NOMOD51
+
+; STARTUP.a51
+; ACUD 
+; Ver : W112  H1540
+;
 ;------------------------------------------------------------------------------
 ;  This file is part of the C51 Compiler package
 ;  Copyright (c) 1988-2005 Keil Elektronik GmbH and Keil Software, Inc.
@@ -27,15 +32,18 @@ $NOMOD51
 ; <o> IDATALEN: IDATA memory size <0x0-0x100>
 ;     <i> Note: The absolute start-address of IDATA memory is always 0
 ;     <i>       The IDATA space overlaps physically the DATA and BIT areas.
-IDATALEN        EQU     80H
+; IDATALEN        EQU     80H
+IDATALEN        EQU     FFH									// Revise by Daniel W112: Declare AT89C51RC 256 Internal RAM. 
 ;
 ; <o> XDATASTART: XDATA memory start address <0x0-0xFFFF> 
 ;     <i> The absolute start address of XDATA memory
-XDATASTART      EQU     0     
+XDATASTART      EQU     0H     
 ;
 ; <o> XDATALEN: XDATA memory size <0x0-0xFFFF> 
 ;     <i> The length of XDATA memory in bytes.
-XDATALEN        EQU     0      
+
+; XDATALEN        EQU     0H
+XDATALEN        EQU     FFH									// Revise by Daniel W112: Declare AT89C51RC 256 Extand RAM.   
 ;
 ; <o> PDATASTART: PDATA memory start address <0x0-0xFFFF> 
 ;     <i> The absolute start address of PDATA memory
