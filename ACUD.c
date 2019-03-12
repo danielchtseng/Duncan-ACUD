@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W105  H1440
+// Ver : W112  H1000
 
 // on going: 
 
@@ -13,7 +13,7 @@
 #include <string.h>
 #include <math.h>
 //#include <stdbool.h>
-// #include <stdlib.h>
+//#include <stdlib.h>
 
 
 // @@@@@@@@@@@@@@@      Declare      @@@@@@@@@@@@@@@
@@ -119,7 +119,7 @@ typedef int bool; // or #define bool int
 
 
 /* Declare related to Timer */
-unsigned short 	idata		Ten_mS_Counter;					// 2 bytes: 0-65535
+unsigned short 	xdata		Ten_mS_Counter;					// 2 bytes: 0-65535
 
 /* Bit Field: 是一種省空間的特殊 data member, 可以使用特定幾個 bit 來放 data.
 // The declaration of a bit-field has the following form inside a structure
@@ -157,12 +157,12 @@ unsigned short 	idata		Ten_mS_Counter;					// 2 bytes: 0-65535
 sbit 	PC_485Tx   		= P3^2;					// sbit INT0    = 0xB2;			// UART TXD
 sbit 	UART_TxD1 		= P3^1;					// sbit TXD     = 0xB1;			// UARD RXD
 sbit 	UART_RxD1 		= P3^0;					// sbit RXD     = 0xB0;
-int 			idata		PC_In_Buf_Index;
-int 			idata		PC_Out_Buf_Index;
-char 			idata		PC_In_Buf[PC_In_Buf_Max];
-char 			idata		PC_Out_Buf[PC_Out_Buf_Max];
-char			idata 		Indiv_To_PC[5];							// Individual data array to PC					
-int 			idata 		*ACUD_ID_3Dec;
+int 			xdata		PC_In_Buf_Index;
+int 			xdata		PC_Out_Buf_Index;
+char 			xdata		PC_In_Buf[PC_In_Buf_Max];
+char 			xdata		PC_Out_Buf[PC_Out_Buf_Max];
+char			xdata 		Indiv_To_PC[5];							// Individual data array to PC					
+int 			xdata 		*ACUD_ID_3Dec;
 
 
 
@@ -248,7 +248,6 @@ int     		idata		FAN_Speed;								// 0:L, 1:M,  2:H
 // @@@@@@@@@@@@@@@      Program      @@@@@@@@@@@@@@@
 
 
-
 // ##### Period Timer	
 void TIMER0_Ten_mS_Init(int N){					// 10*mS timer
 
@@ -281,6 +280,7 @@ void TIMER0_Ten_mS_Init(int N){					// 10*mS timer
 		1: Set by program to enable external interrupt 1 to be triggered by a falling edge signal to generate an interrupt.
 	*/
 	Ten_mS_Counter = 0;
+	
 }
 	
 void TIMER0_Ten_mS() interrupt 1 {				// Timer0 INT vector=000Bh
@@ -992,28 +992,20 @@ void PC_StateEvent(){
 }
 
 
+/* ACP Event manipulate */
 
-//	/* ACP Event manipulate */
 //	void ACP_StateEvent(){
-
 //		//* Using array to instead of pointer to reserve memory firmdly, 
 //		   when implementing strcpy(), strcat() */
 //		int 	Resp;
 //		
-//
 //		if(Comm.ACP_Rx_Ready_Flg){				
 			
 //			if (strstr(ACP_In_Buf,"command string 1") = 0) {
-//			//* "Enter" was included in ACP_In_Buf  */
-			
-			
-			
-		
-			
+//			//* "Enter" was included in ACP_In_Buf  */	
 					
 				//* Reply acknowledge back to ACP */
-			
-			
+					
 //				Resp = ACP_Tx_Handler(&Indiv_To_ACP)
 //				if (Resp == 1) {
 //				//* anknowledge back to ACP successful */
@@ -1032,7 +1024,6 @@ void PC_StateEvent(){
 
 
 
-	
 void Air_Auto_Control(){
 
 float Temperature_delta;
@@ -1097,6 +1088,7 @@ float Temperature_delta;
 	}
 }
 
+
 void Air_Menual_Control(){
 	
 	if (ACUD.Air_Cool_Flg ) {
@@ -1153,7 +1145,6 @@ void Air_Menual_Control(){
 }
 
 
-
 /* Aircondition manipulate */
 void Air_Manipulate(){
 	
@@ -1200,12 +1191,10 @@ void WatchDog(){
 	   cause the watchdog to be reset prior to timeout. To guarantee
 	   that the watchdog timer does not timeout, a high-to-low transition
 	   must occur at or less than the minimum shown in Table
-		
 		| TD PIN	|	MIN 	|	TYP 	|	MAX		|
 		| GND 		|	62.5 ms |	150 ms 	|	250 ms	|
 		| Float 	|	250 ms 	|	600 ms 	|	1000 ms	|
 		| VCC 		|	500 ms 	|	1200 ms |	2000 ms	|
-	
 		Invalue ST > 20nS   
 	*/
 	
@@ -1220,7 +1209,7 @@ main(){
 	
 	/* Initialization manipulate */
 	System_Init();	
-		
+	
 	/* Interrupt Priority: 	IP		// Put this function being as last function 
 	| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 	
 	| RSV  | RSV  |	PT2	 | PS	| PT1  | PX1  | PT0	 | PX0  |
@@ -1231,9 +1220,9 @@ main(){
 	PT1	Timer1 
 	PX1	External 1 
 	PT0	Timer0 
-	PX0	External 0 */
-	IP=0x00;									// Default priority
-							
+	PX0	External 0 
+	*/
+	IP=0x00;									// Default priority						
 	/* Interrupt Enable: 	IE
 	| bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | 
 	|  EA  | RSV  |	ET2  |	ES	| ET1  | EX1  |	ET0	 | EX0  |
@@ -1244,7 +1233,8 @@ main(){
 	ET1	Timer 1
 	EX1	Ecternal 1
 	ET0	Timer 0
-	EX0	External 0	*/
+	EX0	External 0	
+	*/
 	ES=1;										// IE.ES,  Enable Serial Interrupt, UART comm. with PC
 	ET0=1;										// IE.ET0, Enable Timer0 Interrupt, 10ms period
 	EX1=1;										// IE.EX1, Enable Ext 1 Interrupt, Serial comm. with ACP
@@ -1252,11 +1242,6 @@ main(){
 
 	while(1){
 	
-//		if(ACUD.WD_Rst_Flg){					// Set by IIMER0_10mS() interrupt 1
-//			ACUD.WD_Rst_Flg = 0	;				// Clear flag
-//			WatchDog();							// Implement Reset watchdog
-//		}
-		
 		if(ACUD.Card_Det_Flg){					// Set by IIMER0_10mS() interrupt 1
 			ACUD.Card_Det_Flg = 0;				// Clear flag
 			ACUD.Card_Exist_Flg = Card_Det_Pin;	// Reading Key exist status
