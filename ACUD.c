@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W113  H0850
+// Ver : W113  H1030
 
 // on going: 
 
@@ -249,8 +249,8 @@ int     		xdata		FAN_Speed;								// 0:L, 1:M,  2:H
 
 
 // ##### Period Timer	
-void TIMER0_Ten_mS_Init(int N){					// 10*mS timer
-
+void TIMER0_Ten_mS_Init(N){					// 10*mS timer
+	chat xdata N;
 	TMOD &= 0xF0;								// Clear Timer 0 
 	TMOD |= 0x01; 								// Mode 1, 16 bit timer/count mode	
 	
@@ -301,9 +301,11 @@ void TIMER0_Ten_mS() interrupt 1 {				// Timer0 INT vector=000Bh
 	}
 }
 
-void mS_Delay(int m){							// Delay m*ms 
+void mS_Delay(m){								// Delay m*ms 
 	
-	int i,j;									// 宣告整數變數i,j
+	char xdata m;
+	char xdata i;
+	char xdata j;								// 宣告整數變數i,j
 	for (i=0;i<m;i++)							// 計數N次,延遲 m*1ms 
 	//#if Fosc == 22.1184							// 延遲 t*1ms @22.1184MHz
 		for (j=0;j<1600;j++);
@@ -313,8 +315,8 @@ void mS_Delay(int m){							// Delay m*ms
 	//#endif
 }
 
-void uS_Delay (int u){							// Delay u*us, 52us or 104us
-
+void uS_Delay (u){								// Delay u*us, 52us or 104us
+	char xdata u;
 
 
 
@@ -441,10 +443,11 @@ void PC_UART_Init(){
 
 }
 
-bool PC_Tx_Handler(int *Indiv_PC_Tx_Ptr){		// Pointer of individual data array (Indiv_To_PC[])
+bool PC_Tx_Handler(*Indiv_PC_Tx_Ptr){		// Pointer of individual data array (Indiv_To_PC[])
 		/* Data in Indiv_To_PC[] including "Enter" as tail */
+	char xdata 	*Indiv_PC_Tx_Ptr;
 	bool 		Resp;
-	int xdata	i = 0;
+	char xdata	i = 0;
 	char xdata	PC_TBUF;
 	
 	if(!(Comm.PC_Tx_Busy_Flg)){				    // PC Tx avilable
@@ -560,14 +563,15 @@ void ACP_Tx_PhyLayer(){
 	/* For ACP_Tx_Handler(), to allow transmit again over IOSerial */
 }
 
-bool ACP_Tx_Handler(int *Indiv_To_ACP_Ptr){		// Pointer of individual data array(Indiv_To_ACP[])
+bool ACP_Tx_Handler(*Indiv_To_ACP_Ptr){		// Pointer of individual data array(Indiv_To_ACP[])
 	/* Data in Indiv_To_ACP[] including "Enter" as tail */
 	// sbit ACP_RxD0 	= P3^7;					// RD
 	// sbit ACP_TxD0	= P3^6;					// WR
 	// sbit ACP_485Tx   = P3^5;					// T1
 	// sbit ACP_INT1 	= P3^3;					// INT1, connect to pin RxD0
+	char xdata 	*Indiv_To_ACP_Ptr;
 	bool Resp;
-	int xdata	i = 0;
+	char xdata	i = 0;
 	char xdata	ACP_T_TEMP;
 	
 	if(!(Comm.ACP_Tx_Busy_Flg)){				// IOSerial Tx avilable
@@ -608,7 +612,7 @@ void ACP_Rx() interrupt 2 {
 	
 	uS_Delay(52);
 	if (ACP_RxD0 == 0){ 						// Expecting start bit "0" 
-		int i;
+		char xdata i;
 		for (i=0;i<8;i++){
 			uS_Delay(104);
 			if (ACP_RxD0 == 1){
@@ -666,7 +670,7 @@ void ADC_Init(){
 // matches up to the channel identifier bit, and the 10-bit conversion 
 // result with MSB provided first, followed by two trailing zeros.
 */
-	int xdata	i;
+	char xdata	i;
 	ADC_SCLK_Pin = 1;
 	ADC_CS_Pin = 1;
 	ADC_CS_Pin = 0;
@@ -681,7 +685,7 @@ void ADC_Init(){
 }
 
 float ADC_Rd(){									// n=10 or 12, n bits convert resolution
-	int xdata	i;
+	char xdata	i;
 	float xdata	ConvertedVolt = 0;
 	
 	ADC_DO_Pin = 1;
@@ -707,11 +711,12 @@ float ADC_Rd(){									// n=10 or 12, n bits convert resolution
 
 // ##### ACUD
 
-int Hex2Dec(int H){
-	int xdata	Dec;
-	int xdata remainder;
-	int xdata count = 0;
-	int xdata	decimal_number;
+char Hex2Dec(H){
+	char xdata H;
+	char xdata	Dec;
+	char xdata remainder;
+	char xdata count = 0;
+	char xdata	decimal_number;
     while(H > 0){
 		remainder = H % 10;
         decimal_number = Dec + remainder * pow(16, count);
@@ -721,16 +726,18 @@ int Hex2Dec(int H){
 	return Dec;
 }
 
-int Dec2Hex(int Dec){
-int xdata	Hex;
+char Dec2Hex(Dec){
+	char xdata 	Dec;
+	char xdata	Hex;
 
 	/* not impletement yet */
 
 	return Hex;
 }
 
-int *HexInt2ASCIIStr(int HexInt){
-	int xdata	AscStr[3];
+char *HexInt2ASCIIStr(HexInt){
+	char xdata 	HexInt;
+	char xdata	AscStr[3];
 	
 	AscStr[0] = HexInt/100+48;					// Hunderd digit
 	AscStr[1] = (HexInt/10)%10+48;				// Ten digit
@@ -739,8 +746,9 @@ int *HexInt2ASCIIStr(int HexInt){
 	return AscStr;
 }
 
-int *HexInt2DecStr(int HexInt){
-	int xdata	DecStr[3];
+char *HexInt2DecStr(HexInt){
+	char xdata HexInt;
+	char xdata	DecStr[3];
 	
 	DecStr[0] = HexInt/100;						// Hunderd digit
 	DecStr[1] = (HexInt/10)%10;					// Ten digit
@@ -749,10 +757,11 @@ int *HexInt2DecStr(int HexInt){
 	return DecStr;
 }
 
-int DecStr2HexInt(int *DecStr){					
+char DecStr2HexInt(*DecStr){	
 	/* string length must be 2 digits */
-	int xdata	HexInt;
-	int xdata	temp;
+	char xdata 	*DecStr;
+	char xdata	HexInt;
+	char xdata	temp;
 	
 	HexInt = *DecStr;
 	HexInt = (HexInt*10)/16;
@@ -819,7 +828,8 @@ void System_Init(){
 	ACUD_Init();
 }
 
-void PC_C_Event_Reply(char* Cmd){
+void PC_C_Event_Reply(Cmd){
+	char xdata *Cmd;
 	bool 	Resp;
 /* Reply back to PC */
 	strcpy(Indiv_To_PC,"A");
@@ -843,7 +853,7 @@ void PC_C_Event_Reply(char* Cmd){
 	}
 }
 
-void C_D_Event_Reply(){
+void PC_D_Event_Reply(){
 	bool 	Resp;
 /* Reply back to PC */
 	strcpy(Indiv_To_PC,"DONE");
@@ -872,9 +882,9 @@ void C_D_Event_Reply(){
 /* PC Event manipulate */
 void PC_StateEvent(){
 	
-	int xdata	*ACUD_ID_3Dec_Ptr;						// Point to ID start position
+	char xdata	*ACUD_ID_3Dec_Ptr;						// Point to ID start position
 	char xdata	*Command_Ptr;							// point to Command start position
-	int	xdata	*Tempe_Ptr;								// Point to temperature start position
+	char xdata	*Tempe_Ptr;								// Point to temperature start position
 //	char	Indiv_To_PC[5];							// Individual data array to PC					
 	/* Using array to instead of pointer to reserve memory firmdly, when implementing strcpy(), strcat() */
 
@@ -1091,7 +1101,7 @@ void Air_Auto_Control(){
 }
 
 
-void Air_Menual_Control(){
+void Air_Manual_Control(){
 	
 	if (ACUD.Air_Cool_Flg ) {
 	/* Cooler */
