@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W113  H1145
+// Ver : W113  H1330
 
 // on going: 
 
@@ -162,7 +162,7 @@ char 			xdata		PC_Out_Buf_Index;
 char 			xdata		PC_In_Buf[PC_In_Buf_Max];
 char 			xdata		PC_Out_Buf[PC_Out_Buf_Max];
 char			xdata 		Indiv_To_PC[5];							// Individual data array to PC					
-char 			xdata 		*ACUD_ID_3Dec;
+char 			  			*ACUD_ID_3Dec;
 
 
 
@@ -248,7 +248,7 @@ char     		xdata		FAN_Speed;								// 0:L, 1:M,  2:H
 
 
 // ##### Period Timer	
-void TIMER0_Ten_mS_Init(char xdata Ten){					// 10*mS timer
+void TIMER0_Ten_mS_Init(char Ten){					// 10*mS timer
 	// char xdata Ten;
 	TMOD &= 0xF0;								// Clear Timer 0 
 	TMOD |= 0x01; 								// Mode 1, 16 bit timer/count mode	
@@ -300,7 +300,7 @@ void TIMER0_Ten_mS() interrupt 1 {				// Timer0 INT vector=000Bh
 	}
 }
 
-void mS_Delay(char xdata NmS){								// Delay N*ms 
+void mS_Delay(char NmS){								// Delay N*ms 
 	
 	// char xdata NmS;
 	char xdata i;
@@ -314,7 +314,7 @@ void mS_Delay(char xdata NmS){								// Delay N*ms
 	//#endif
 }
 
-void uS_Delay (char xdata NuS){								// Delay u*us, 52us or 104us
+void uS_Delay (char NuS){								// Delay u*us, 52us or 104us
 	// char xdata NuS;
 
 
@@ -442,7 +442,7 @@ void PC_UART_Init(){
 
 }
 
-bool PC_Tx_Handler(int xdata *Indiv_PC_Tx_Ptr){		// Pointer of individual data array (Indiv_To_PC[])
+bool PC_Tx_Handler(char *Indiv_PC_Tx_Ptr){		// Pointer of individual data array (Indiv_To_PC[])
 		/* Data in Indiv_To_PC[] including "Enter" as tail */
 	// int xdata 	*Indiv_PC_Tx_Ptr;
 	bool 		Resp;
@@ -562,7 +562,7 @@ void ACP_Tx_PhyLayer(){
 	/* For ACP_Tx_Handler(), to allow transmit again over IOSerial */
 }
 
-bool ACP_Tx_Handler(int xdata *Indiv_To_ACP_Ptr){		// Pointer of individual data array(Indiv_To_ACP[])
+bool ACP_Tx_Handler(char *Indiv_To_ACP_Ptr){		// Pointer of individual data array(Indiv_To_ACP[])
 	/* Data in Indiv_To_ACP[] including "Enter" as tail */
 	// sbit ACP_RxD0 	= P3^7;					// RD
 	// sbit ACP_TxD0	= P3^6;					// WR
@@ -710,13 +710,13 @@ float ADC_Rd(){									// n=10 or 12, n bits convert resolution
 
 // ##### ACUD
 
-char Hex2Dec(char xdata Hex2D){
+char Hex2Dec(char Hex2D){
 	// char xdata 	Hex2D;
 	char xdata	Dec;
 	char xdata 	remainder;
 	char xdata 	count = 0;
 	char xdata	decimal_number;
-    while(H > 0){
+    while(Hex2D > 0){
 		remainder = Hex2D % 10;
         decimal_number = Dec + remainder * pow(16, count);
         Hex2D = Hex2D / 10;
@@ -725,7 +725,7 @@ char Hex2Dec(char xdata Hex2D){
 	return Dec;
 }
 
-char Dec2Hex(char xdata Dec2H){
+char Dec2Hex(char Dec2H){
 	// char xdata 	Dec2H;
 	char xdata	Hex;
 
@@ -734,7 +734,7 @@ char Dec2Hex(char xdata Dec2H){
 	return Hex;
 }
 
-char *HexInt2ASCIIStr(char xdata HexInt2A){
+char *HexInt2ASCIIStr(char HexInt2A){
 	// char xdata 	HexInt2A;
 	char xdata	AscStr[3];
 	
@@ -745,7 +745,7 @@ char *HexInt2ASCIIStr(char xdata HexInt2A){
 	return AscStr;
 }
 
-char *HexInt2DecStr(char xdata HexInt2D){
+char *HexInt2DecStr(char HexInt2D){
 	// char xdata 	HexInt2D;
 	char xdata	DecStr[3];
 	
@@ -756,7 +756,7 @@ char *HexInt2DecStr(char xdata HexInt2D){
 	return DecStr;
 }
 
-char DecStr2HexInt(char xdata *DecStr){	
+char DecStr2HexInt(char *DecStr){	
 	/* string length must be 2 digits */
 	// char xdata 	*DecStr;
 	char xdata	HexInt;
@@ -827,7 +827,7 @@ void System_Init(){
 	ACUD_Init();
 }
 
-void PC_C_Event_Reply(char xdata *Cmd){
+void PC_C_Event_Reply(char *Cmd){
 	//char xdata *Cmd;
 	bool Resp;
 /* Reply back to PC */
@@ -881,9 +881,9 @@ void PC_D_Event_Reply(){
 /* PC Event manipulate */
 void PC_StateEvent(){
 	
-	char xdata	*ACUD_ID_3Dec_Ptr;						// Point to ID start position
-	char xdata	*Command_Ptr;							// point to Command start position
-	char xdata	*Tempe_Ptr;								// Point to temperature start position
+	char *ACUD_ID_3Dec_Ptr;						// Point to ID start position
+	char *Command_Ptr;							// point to Command start position
+	char *Tempe_Ptr;								// Point to temperature start position
 //	char	Indiv_To_PC[5];							// Individual data array to PC					
 	/* Using array to instead of pointer to reserve memory firmdly, when implementing strcpy(), strcat() */
 
