@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W113  H1030
+// Ver : W113  H1120
 
 // on going: 
 
@@ -157,12 +157,12 @@ unsigned short 	xdata		Ten_mS_Counter;					// 2 bytes: 0-65535
 sbit 	PC_485Tx   		= P3^2;					// sbit INT0    = 0xB2;			// UART TXD
 sbit 	UART_TxD1 		= P3^1;					// sbit TXD     = 0xB1;			// UARD RXD
 sbit 	UART_RxD1 		= P3^0;					// sbit RXD     = 0xB0;
-int 			xdata		PC_In_Buf_Index;
-int 			xdata		PC_Out_Buf_Index;
+char 			xdata		PC_In_Buf_Index;
+char 			xdata		PC_Out_Buf_Index;
 char 			xdata		PC_In_Buf[PC_In_Buf_Max];
 char 			xdata		PC_Out_Buf[PC_Out_Buf_Max];
 char			xdata 		Indiv_To_PC[5];							// Individual data array to PC					
-int 			xdata 		*ACUD_ID_3Dec;
+char 			xdata 		*ACUD_ID_3Dec;
 
 
 
@@ -177,8 +177,8 @@ sbit 	ACP_485Tx		= P3^5;					// sbit T1      = 0xB5;			// T1
 sbit 	ACP_INT1		= P3^3;					// sbit INT1    = 0xB3;			// INT0, UART 
 // related to Handler 
 char 			xdata		Indiv_To_ACP_[5];						// Individual data array to ACP	
-int 			xdata		ACP_In_Buf_Index;
-int 			xdata		ACP_Out_Buf_Index;
+char 			xdata		ACP_In_Buf_Index;
+char 			xdata		ACP_Out_Buf_Index;
 char 			xdata		ACP_In_Buf[ACP_In_Buf_Max];
 char 			xdata		ACP_Out_Buf[ACP_Out_Buf_Max];
 
@@ -191,9 +191,8 @@ sbit 	ADC_DIN_Pin  	= P1^3;
 sbit 	ADC_SCLK_Pin 	= P1^2;
 sbit 	ADC_CS_Pin   	= P1^1;
 sbit 	ADC_DO_Pin		= P1^0;
-unsigned int   	xdata		ADC_ConvertedData;				// 2 bytes
-int 			xdata		ConvertedData;		
-int     		xdata		ADC_Data;
+	
+int     		xdata		ADC_Data;			// 2 bytes
 
 
 /* Declare related to ACUD */
@@ -207,12 +206,12 @@ sbit 	Card_Det_Pin  	= P0^5;					// Card detection
 // Port 3:
 sbit 	WatchDog_ST  	= P3^4;					// sbit T0      = 0xB4;	        // T0
 
-int				xdata		ACUD_ID_Hex;
+char			xdata		ACUD_ID_Hex;
 float 			xdata		Temperature_Setting;
 float			xdata		Temperature_Reality;
-int				xdata		Checkout_Air_Period;					// 10-60min in an hour
-int     		xdata		Minute_Counter;
-int     		xdata		FAN_Speed;								// 0:L, 1:M,  2:H
+char			xdata		Checkout_Air_Period;					// 10-60min in an hour
+char     		xdata		Minute_Counter;
+char     		xdata		FAN_Speed;								// 0:L, 1:M,  2:H
 
 
 
@@ -249,13 +248,13 @@ int     		xdata		FAN_Speed;								// 0:L, 1:M,  2:H
 
 
 // ##### Period Timer	
-void TIMER0_Ten_mS_Init(N){					// 10*mS timer
-	chat xdata N;
+void TIMER0_Ten_mS_Init(Ten){					// 10*mS timer
+	char xdata Ten;
 	TMOD &= 0xF0;								// Clear Timer 0 
 	TMOD |= 0x01; 								// Mode 1, 16 bit timer/count mode	
 	
-	TH0 = (65536-(N*1000/1843200))/256;
-	TL0 = (65536-(N*1000/1843200))%256;
+	TH0 = (65536-(Ten*1000/1843200))/256;
+	TL0 = (65536-(Ten*1000/1843200))%256;
 	/* The content of TH0 & TL0 is designed to meet 1ms 
 	TR0=1;;										// TCON.TR0=1, Timer 0 start running
 	/* TCON: Related to Timer:
@@ -301,12 +300,12 @@ void TIMER0_Ten_mS() interrupt 1 {				// Timer0 INT vector=000Bh
 	}
 }
 
-void mS_Delay(m){								// Delay m*ms 
+void mS_Delay(NmS){								// Delay N*ms 
 	
-	char xdata m;
+	char xdata NmS;
 	char xdata i;
 	char xdata j;								// 宣告整數變數i,j
-	for (i=0;i<m;i++)							// 計數N次,延遲 m*1ms 
+	for (i=0;i<NmS;i++)							// 計數N次,延遲 m*1ms 
 	//#if Fosc == 22.1184							// 延遲 t*1ms @22.1184MHz
 		for (j=0;j<1600;j++);
 	//	;										// means NOP ;
@@ -315,8 +314,8 @@ void mS_Delay(m){								// Delay m*ms
 	//#endif
 }
 
-void uS_Delay (u){								// Delay u*us, 52us or 104us
-	char xdata u;
+void uS_Delay (NuS){								// Delay u*us, 52us or 104us
+	char xdata NuS;
 
 
 
@@ -445,7 +444,7 @@ void PC_UART_Init(){
 
 bool PC_Tx_Handler(*Indiv_PC_Tx_Ptr){		// Pointer of individual data array (Indiv_To_PC[])
 		/* Data in Indiv_To_PC[] including "Enter" as tail */
-	char xdata 	*Indiv_PC_Tx_Ptr;
+	int xdata 	*Indiv_PC_Tx_Ptr;
 	bool 		Resp;
 	char xdata	i = 0;
 	char xdata	PC_TBUF;
@@ -531,7 +530,7 @@ void ACP_Tx_PhyLayer(){
 	   "Enter" char no neet to send to ACP */
 	/* Comm.ACP_Tx_Busy_Flg had been set in ACP_Tx_Handler() */	
 	
-	int xdata	i = 0;
+	char xdata	i = 0;
 	char xdata	ACP_T_TEMP;
 
 	ACP_T_TEMP = ACP_Out_Buf[ACP_Out_Buf_Index];
@@ -569,7 +568,7 @@ bool ACP_Tx_Handler(*Indiv_To_ACP_Ptr){		// Pointer of individual data array(Ind
 	// sbit ACP_TxD0	= P3^6;					// WR
 	// sbit ACP_485Tx   = P3^5;					// T1
 	// sbit ACP_INT1 	= P3^3;					// INT1, connect to pin RxD0
-	char xdata 	*Indiv_To_ACP_Ptr;
+	int xdata 	*Indiv_To_ACP_Ptr;
 	bool Resp;
 	char xdata	i = 0;
 	char xdata	ACP_T_TEMP;
@@ -711,23 +710,23 @@ float ADC_Rd(){									// n=10 or 12, n bits convert resolution
 
 // ##### ACUD
 
-char Hex2Dec(H){
-	char xdata H;
+char Hex2Dec(Hex2D){
+	char xdata 	Hex2D;
 	char xdata	Dec;
-	char xdata remainder;
-	char xdata count = 0;
+	char xdata 	remainder;
+	char xdata 	count = 0;
 	char xdata	decimal_number;
     while(H > 0){
-		remainder = H % 10;
+		remainder = Hex2D % 10;
         decimal_number = Dec + remainder * pow(16, count);
-        H = H / 10;
+        Hex2D = Hex2D / 10;
         count++;
     }
 	return Dec;
 }
 
-char Dec2Hex(Dec){
-	char xdata 	Dec;
+char Dec2Hex(Dec2H){
+	char xdata 	Dec2H;
 	char xdata	Hex;
 
 	/* not impletement yet */
@@ -735,24 +734,24 @@ char Dec2Hex(Dec){
 	return Hex;
 }
 
-char *HexInt2ASCIIStr(HexInt){
-	char xdata 	HexInt;
+char *HexInt2ASCIIStr(HexInt2A){
+	char xdata 	HexInt2A;
 	char xdata	AscStr[3];
 	
-	AscStr[0] = HexInt/100+48;					// Hunderd digit
-	AscStr[1] = (HexInt/10)%10+48;				// Ten digit
-	AscStr[2] = HexInt%10+48;					// digit
+	AscStr[0] = HexInt2A/100+48;					// Hunderd digit
+	AscStr[1] = (HexInt2A/10)%10+48;				// Ten digit
+	AscStr[2] = HexInt2A%10+48;					// digit
 	
 	return AscStr;
 }
 
-char *HexInt2DecStr(HexInt){
-	char xdata HexInt;
+char *HexInt2DecStr(HexInt2D){
+	char xdata 	HexInt2D;
 	char xdata	DecStr[3];
 	
-	DecStr[0] = HexInt/100;						// Hunderd digit
-	DecStr[1] = (HexInt/10)%10;					// Ten digit
-	DecStr[2] = HexInt%10;						// digit
+	DecStr[0] = HexInt2D/100;						// Hunderd digit
+	DecStr[1] = (HexInt2D/10)%10;					// Ten digit
+	DecStr[2] = HexInt2D%10;						// digit
 	
 	return DecStr;
 }
@@ -830,7 +829,7 @@ void System_Init(){
 
 void PC_C_Event_Reply(Cmd){
 	char xdata *Cmd;
-	bool 	Resp;
+	bool Resp;
 /* Reply back to PC */
 	strcpy(Indiv_To_PC,"A");
 	strcat(Indiv_To_PC,ACUD_ID_3Dec);
