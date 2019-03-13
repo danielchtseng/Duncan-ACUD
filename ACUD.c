@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W112  H1540
+// Ver : W113  H0850
 
 // on going: 
 
@@ -110,10 +110,10 @@ sbit 	EX0  	= 0xA8;							// sbit EX0 = 0xA8^0
 
 	
 #ifndef MYBOOLEAN_H
-#define MYBOOLEAN_H
-#define false 0
-#define true 1
-typedef int bool; // or #define bool int
+	#define MYBOOLEAN_H
+	#define false 0
+	#define true 1
+	typedef int bool; // or #define bool int
 #endif	
 
 
@@ -708,15 +708,17 @@ float ADC_Rd(){									// n=10 or 12, n bits convert resolution
 // ##### ACUD
 
 int Hex2Dec(int H){
-      int xdata	Dec, remainder, count = 0;
-	  int xdata	decimal_number;
-      while(H > 0){
-            remainder = H % 10;
-            decimal_number = Dec + remainder * pow(16, count);
-            H = H / 10;
-            count++;
-      }
-      return Dec;
+	int xdata	Dec;
+	int xdata remainder;
+	int xdata count = 0;
+	int xdata	decimal_number;
+    while(H > 0){
+		remainder = H % 10;
+        decimal_number = Dec + remainder * pow(16, count);
+        H = H / 10;
+        count++;
+    }
+	return Dec;
 }
 
 int Dec2Hex(int Dec){
@@ -870,9 +872,9 @@ void C_D_Event_Reply(){
 /* PC Event manipulate */
 void PC_StateEvent(){
 	
-	int     *ACUD_ID_3Dec_Ptr;						// Point to ID start position
-	char 	*Command_Ptr;							// point to Command start position
-	int		*Tempe_Ptr;								// Point to temperature start position
+	int xdata	*ACUD_ID_3Dec_Ptr;						// Point to ID start position
+	char xdata	*Command_Ptr;							// point to Command start position
+	int	xdata	*Tempe_Ptr;								// Point to temperature start position
 //	char	Indiv_To_PC[5];							// Individual data array to PC					
 	/* Using array to instead of pointer to reserve memory firmdly, when implementing strcpy(), strcat() */
 
@@ -1026,7 +1028,7 @@ void PC_StateEvent(){
 
 void Air_Auto_Control(){
 
-float Temperature_delta;
+	float xdata Temperature_delta;
 
 	Temperature_delta = Temperature_Setting-Temperature_Reality;
 	/* Temperature_Reality will be updated by ADC_Rd() in IIMER0_NmS() interrupt 1
