@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W113  H1330
+// Ver : W115  H1545
 
 // on going: 
 
@@ -153,7 +153,7 @@ unsigned short 	xdata		Ten_mS_Counter;					// 2 bytes: 0-65535
 #define Baudrate			9600				// ***** Need to be confirmed
 #define PC_In_Buf_Max 		5					// ***** Need to be confirmed
 #define PC_Out_Buf_Max		5					// ***** Need to be confirmed
-#define Enter				0x13				// ASCII 13: carry Return
+#define Enter				13					// ASCII 13: carry Return
 sbit 	PC_485Tx   		= P3^2;					// sbit INT0    = 0xB2;			// UART TXD
 sbit 	UART_TxD1 		= P3^1;					// sbit TXD     = 0xB1;			// UARD RXD
 sbit 	UART_RxD1 		= P3^0;					// sbit RXD     = 0xB0;
@@ -315,7 +315,7 @@ void mS_Delay(char NmS){								// Delay N*ms
 }
 
 void uS_Delay (char NuS){								// Delay u*us, 52us or 104us
-	// char xdata NuS;
+
 
 
 
@@ -726,7 +726,7 @@ char Hex2Dec(char Hex2D){
 }
 
 char Dec2Hex(char Dec2H){
-	// char xdata 	Dec2H;
+
 	char xdata	Hex;
 
 	/* not impletement yet */
@@ -834,7 +834,7 @@ void PC_C_Event_Reply(char *Cmd){
 	strcpy(Indiv_To_PC,"A");
 	strcat(Indiv_To_PC,ACUD_ID_3Dec);
 	strcat(Indiv_To_PC,Cmd);					
-	strcat(Indiv_To_PC,Enter);
+	strcat(Indiv_To_PC,Enter);						//	Carry Return
 	/* "Enter" need to be included */
 				
 	Resp = PC_Tx_Handler(&Indiv_To_PC);
@@ -857,7 +857,7 @@ void PC_D_Event_Reply(){
 /* Reply back to PC */
 	strcpy(Indiv_To_PC,"DONE");
 	strcat(Indiv_To_PC,ACUD_ID_3Dec);					
-	strcat(Indiv_To_PC,Enter);
+	strcat(Indiv_To_PC,Enter);						//	Carry Return
 	/* "Enter" need to be included */
 				
 	Resp = PC_Tx_Handler(&Indiv_To_PC);
@@ -957,7 +957,7 @@ void PC_StateEvent(){
 				else if(strstr(Command_Ptr,"ST")) {	// ST Temperature setting
 					
 					Tempe_Ptr = Command_Ptr + 2;	// point to start position of Temperature		
-					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);	
+					Temperature_Setting = DecStr2HexInt(Tempe_Ptr);	
 						
 					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
@@ -965,7 +965,7 @@ void PC_StateEvent(){
 				else if(strstr(Command_Ptr,"IT")) {	// Key In Temperature setting
 					
 					Tempe_Ptr = Command_Ptr + 2;	// point to start position of Temperature		
-					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);	
+					Temperature_Setting = DecStr2HexInt(Tempe_Ptr);	
 						
 					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
@@ -973,7 +973,7 @@ void PC_StateEvent(){
 				else if(strstr(Command_Ptr,"OT")) {	// Key Out Temperature setting
 				
 					Tempe_Ptr = Command_Ptr + 2;	// point to start position of Temperature		
-					Temperature_Setting = DecStr2HexInt(&Tempe_Ptr);	
+					Temperature_Setting = DecStr2HexInt(Tempe_Ptr);	
 					
 					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
@@ -982,7 +982,7 @@ void PC_StateEvent(){
 					
 					ACUD.Air_Auto_Flg = 1;
 					Tempe_Ptr = Command_Ptr + 2; // point to start position of Temperature
-					Checkout_Air_Period = DecStr2HexInt(&Tempe_Ptr);
+					Checkout_Air_Period = DecStr2HexInt(Tempe_Ptr);
 						
 					PC_C_Event_Reply(Command_Ptr);	
 					/* Reply same Cmd to PC which received from PC*/
