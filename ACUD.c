@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W123  H1508
+// Ver : W123  H1542
 
 // on going: 
 
@@ -157,12 +157,12 @@ unsigned short 		Ten_mS_Counter;					// 2 bytes: 0-65535
 sbit 	PC_485Tx   		= P3^2;					// sbit INT0    = 0xB2;			// UART TXD
 sbit 	UART_TxD1 		= P3^1;					// sbit TXD     = 0xB1;			// UARD RXD
 sbit 	UART_RxD1 		= P3^0;					// sbit RXD     = 0xB0;
-char 					PC_In_Buf_Index;
-char 					PC_Out_Buf_Index;
-char 					PC_In_Buf[PC_In_Buf_Max];
-char 					PC_Out_Buf[PC_Out_Buf_Max];
-char			 		Indiv_To_PC[5];							// Individual data array to PC					
-char 			  			*ACUD_ID_3Dec;
+char 			data		PC_In_Buf_Index;
+char 			data		PC_Out_Buf_Index;
+char 			data		PC_In_Buf[PC_In_Buf_Max];
+char 			data		PC_Out_Buf[PC_Out_Buf_Max];
+char			data		Indiv_To_PC[5];							// Individual data array to PC					
+char 			data  			*ACUD_ID_3Dec;
 
 
 
@@ -176,11 +176,11 @@ sbit 	ACP_TxD0		= P3^6;					// sbit WR      = 0xB6;			// WR
 sbit 	ACP_485Tx		= P3^5;					// sbit T1      = 0xB5;			// T1
 sbit 	ACP_INT1		= P3^3;					// sbit INT1    = 0xB3;			// INT0, UART 
 // related to Handler 
-char 					Indiv_To_ACP_[5];						// Individual data array to ACP	
-char 					ACP_In_Buf_Index;
-char 					ACP_Out_Buf_Index;
-char 					ACP_In_Buf[ACP_In_Buf_Max];
-char 					ACP_Out_Buf[ACP_Out_Buf_Max];
+char 			data		Indiv_To_ACP_[5];						// Individual data array to ACP	
+char 			data		ACP_In_Buf_Index;
+char 			data		ACP_Out_Buf_Index;
+char 			data		ACP_In_Buf[ACP_In_Buf_Max];
+char 			data		ACP_Out_Buf[ACP_Out_Buf_Max];
 
 
 /* Declare related to ADC */
@@ -192,7 +192,7 @@ sbit 	ADC_SCLK_Pin 	= P1^2;
 sbit 	ADC_CS_Pin   	= P1^1;
 sbit 	ADC_DO_Pin		= P1^0;
 	
-int     				ADC_Data;			// 2 bytes
+int     data				ADC_Data;			// 2 bytes
 
 
 /* Declare related to ACUD */
@@ -206,12 +206,12 @@ sbit 	Card_Det_Pin  	= P0^5;					// Card detection
 // Port 3:
 sbit 	WatchDog_ST  	= P3^4;					// sbit T0      = 0xB4;	        // T0
 
-char					ACUD_ID_Hex;
-float 					Temperature_Setting;
-float					Temperature_Reality;
-char					Checkout_Air_Period;					// 10-60min in an hour
-char     				Minute_Counter;
-char     				FAN_Speed;								// 0:L, 1:M,  2:H
+char		data			ACUD_ID_Hex;
+float 	data				Temperature_Setting;
+float		data			Temperature_Reality;
+char		data			Checkout_Air_Period;					// 10-60min in an hour
+char    data 				Minute_Counter;
+char    data 				FAN_Speed;								// 0:L, 1:M,  2:H
 
 
 
