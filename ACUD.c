@@ -2,7 +2,7 @@
 // 8051 Keil C 
 // ACUD 
 // Auther: Duncan Tseng
-// Ver : W123  H1310
+// Ver : W123  H1440
 
 // on going: 
 
@@ -303,8 +303,8 @@ void TIMER0_Ten_mS() interrupt 1 {				// Timer0 INT vector=000Bh
 void mS_Delay(char NmS){								// Delay N*ms 
 	
 	// char xdata NmS;
-	char xdata i;
-	char xdata j;								// 宣告整數變數i,j
+	char  i;
+	char  j;								// 宣告整數變數i,j
 	for (i=0;i<NmS;i++)							// 計數N次,延遲 m*1ms 
 	//#if Fosc == 22.1184							// 延遲 t*1ms @22.1184MHz
 		for (j=0;j<1600;j++);
@@ -446,8 +446,8 @@ bool PC_Tx_Handler(char *Indiv_PC_Tx_Ptr){		// Pointer of individual data array 
 		/* Data in Indiv_To_PC[] including "Enter" as tail */
 	// int xdata 	*Indiv_PC_Tx_Ptr;
 	bool 		Resp;
-	char xdata	i = 0;
-	char xdata	PC_TBUF;
+	char 	i = 0;
+	char 	PC_TBUF;
 	
 	if(!(Comm.PC_Tx_Busy_Flg)){				    // PC Tx avilable
 	/* Got the rigth to allow data in Indiv_To_PC[] port to PC_Out_Buf[] */
@@ -530,8 +530,8 @@ void ACP_Tx_PhyLayer(){
 	   "Enter" char no neet to send to ACP */
 	/* Comm.ACP_Tx_Busy_Flg had been set in ACP_Tx_Handler() */	
 	
-	char xdata	i = 0;
-	char xdata	ACP_T_TEMP;
+	char 	i = 0;
+	char 	ACP_T_TEMP;
 
 	ACP_T_TEMP = ACP_Out_Buf[ACP_Out_Buf_Index];
 	while (ACP_T_TEMP != Enter){
@@ -570,8 +570,8 @@ bool ACP_Tx_Handler(char *Indiv_To_ACP_Ptr){		// Pointer of individual data arra
 	// sbit ACP_INT1 	= P3^3;					// INT1, connect to pin RxD0
 	// int xdata 	*Indiv_To_ACP_Ptr;
 	bool Resp;
-	char xdata	i = 0;
-	char xdata	ACP_T_TEMP;
+	char 	i = 0;
+	char 	ACP_T_TEMP;
 	
 	if(!(Comm.ACP_Tx_Busy_Flg)){				// IOSerial Tx avilable
 	/* Got the right to allow data in Indiv_To_ACP[] port to ACP_Out_Buf[] */	
@@ -597,7 +597,7 @@ bool ACP_Tx_Handler(char *Indiv_To_ACP_Ptr){		// Pointer of individual data arra
 void ACP_Rx() interrupt 2 {			
 /* EX1 INT, vector=0013h, UART Simulator */
 	
-	char xdata	ACP_R_TEMP;							// Same as UART Rx SBUF
+	char 	ACP_R_TEMP;							// Same as UART Rx SBUF
 	// Tx no need to using interrupt. 
 	// sbit ACP_RxD0 	= P3^7;					// RD
 	// sbit ACP_TxD0	= P3^6;					// WR
@@ -611,7 +611,7 @@ void ACP_Rx() interrupt 2 {
 	
 	uS_Delay(52);
 	if (ACP_RxD0 == 0){ 						// Expecting start bit "0" 
-		char xdata i;
+		char  i;
 		for (i=0;i<8;i++){
 			uS_Delay(104);
 			if (ACP_RxD0 == 1){
@@ -669,7 +669,7 @@ void ADC_Init(){
 // matches up to the channel identifier bit, and the 10-bit conversion 
 // result with MSB provided first, followed by two trailing zeros.
 */
-	char xdata	i;
+	char 	i;
 	ADC_SCLK_Pin = 1;
 	ADC_CS_Pin = 1;
 	ADC_CS_Pin = 0;
@@ -684,8 +684,8 @@ void ADC_Init(){
 }
 
 float ADC_Rd(){									// n=10 or 12, n bits convert resolution
-	char xdata	i;
-	float xdata	ConvertedVolt = 0;
+	char 	i;
+	float 	ConvertedVolt = 0;
 	
 	ADC_DO_Pin = 1;
 	ADC_CS_Pin = 1;
@@ -712,10 +712,10 @@ float ADC_Rd(){									// n=10 or 12, n bits convert resolution
 
 char Hex2Dec(char Hex2D){
 	// char xdata 	Hex2D;
-	char xdata	Dec;
-	char xdata 	remainder;
-	char xdata 	count = 0;
-	char xdata	decimal_number;
+	char 	Dec;
+	char  remainder;
+	char  count = 0;
+	char 	decimal_number;
     while(Hex2D > 0){
 		remainder = Hex2D % 10;
         decimal_number = Dec + remainder * pow(16, count);
@@ -727,7 +727,7 @@ char Hex2Dec(char Hex2D){
 
 char Dec2Hex(char Dec2H){
 
-	char xdata	Hex;
+	char 	Hex;
 
 	/* not impletement yet */
 
@@ -736,7 +736,7 @@ char Dec2Hex(char Dec2H){
 
 char *HexInt2ASCIIStr(char HexInt2A){
 	// char xdata 	HexInt2A;
-	char xdata	AscStr[3];
+	char 	AscStr[3];
 	
 	AscStr[0] = HexInt2A/100+48;					// Hunderd digit
 	AscStr[1] = (HexInt2A/10)%10+48;				// Ten digit
@@ -747,7 +747,7 @@ char *HexInt2ASCIIStr(char HexInt2A){
 
 char *HexInt2DecStr(char HexInt2D){
 	// char xdata 	HexInt2D;
-	char xdata	DecStr[3];
+	char 	DecStr[3];
 	
 	DecStr[0] = HexInt2D/100;						// Hunderd digit
 	DecStr[1] = (HexInt2D/10)%10;					// Ten digit
@@ -759,8 +759,8 @@ char *HexInt2DecStr(char HexInt2D){
 char DecStr2HexInt(char *DecStr){	
 	/* string length must be 2 digits */
 	// char xdata 	*DecStr;
-	char xdata	HexInt;
-	char xdata	temp;
+	char 	HexInt;
+	char 	temp;
 	
 	HexInt = *DecStr;
 	HexInt = (HexInt*10)/16;
@@ -1037,7 +1037,7 @@ void PC_StateEvent(){
 
 void Air_Auto_Control(){
 
-	float xdata Temperature_delta;
+	float  Temperature_delta;
 
 	Temperature_delta = Temperature_Setting-Temperature_Reality;
 	/* Temperature_Reality will be updated by ADC_Rd() in IIMER0_NmS() interrupt 1
