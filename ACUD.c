@@ -1,10 +1,20 @@
 
-// 8051 Keil C 
-// ACUD 
-// Auther: Duncan Tseng
-// Ver : W123  H1542
-
-// on going: 
+// ***********************************************************************
+// ACUD.C
+//
+// 8051 Keil C51 
+// Device: AT89C51RC
+// Target: 
+//		Xtal: 22M
+//		Memory Model: Large, 
+//		Code Rom Size: Large
+//		Use On-Chip ROM: Enable
+//		Use On-Chip RAM: Enable
+//
+// Author: Duncan Tseng
+// Date: W124, H1450
+//
+// ***********************************************************************
 
 
 // @@@@@@@@@@@@@@@      include      @@@@@@@@@@@@@@@
@@ -119,7 +129,7 @@ sbit 	EX0  	= 0xA8;							// sbit EX0 = 0xA8^0
 
 
 /* Declare related to Timer */
-unsigned short 		Ten_mS_Counter;					// 2 bytes: 0-65535
+unsigned short 	data	Ten_mS_Counter;					// 2 bytes: 0-65535
 
 /* Bit Field: 是一種省空間的特殊 data member, 可以使用特定幾個 bit 來放 data.
 // The declaration of a bit-field has the following form inside a structure
@@ -154,15 +164,15 @@ unsigned short 		Ten_mS_Counter;					// 2 bytes: 0-65535
 #define PC_In_Buf_Max 		5					// ***** Need to be confirmed
 #define PC_Out_Buf_Max		5					// ***** Need to be confirmed
 #define Enter				13					// ASCII 13: carry Return
-sbit 	PC_485Tx   		= P3^2;					// sbit INT0    = 0xB2;			// UART TXD
-sbit 	UART_TxD1 		= P3^1;					// sbit TXD     = 0xB1;			// UARD RXD
-sbit 	UART_RxD1 		= P3^0;					// sbit RXD     = 0xB0;
-char 			data		PC_In_Buf_Index;
-char 			data		PC_Out_Buf_Index;
-char 			data		PC_In_Buf[PC_In_Buf_Max];
-char 			data		PC_Out_Buf[PC_Out_Buf_Max];
-char			data		Indiv_To_PC[5];							// Individual data array to PC					
-char 			data  			*ACUD_ID_3Dec;
+sbit 			PC_485Tx   		= P3^2;					// sbit INT0    = 0xB2;			// UART TXD
+sbit 			UART_TxD1 		= P3^1;					// sbit TXD     = 0xB1;			// UARD RXD
+sbit 			UART_RxD1 		= P3^0;					// sbit RXD     = 0xB0;
+char 	data	PC_In_Buf_Index;
+char 	data	PC_Out_Buf_Index;
+char 	data	PC_In_Buf[PC_In_Buf_Max];
+char	data	PC_Out_Buf[PC_Out_Buf_Max];
+char	data	Indiv_To_PC[5];							// Individual data array to PC					
+char 	data  	*ACUD_ID_3Dec;
 
 
 
@@ -176,11 +186,11 @@ sbit 	ACP_TxD0		= P3^6;					// sbit WR      = 0xB6;			// WR
 sbit 	ACP_485Tx		= P3^5;					// sbit T1      = 0xB5;			// T1
 sbit 	ACP_INT1		= P3^3;					// sbit INT1    = 0xB3;			// INT0, UART 
 // related to Handler 
-char 			data		Indiv_To_ACP_[5];						// Individual data array to ACP	
-char 			data		ACP_In_Buf_Index;
-char 			data		ACP_Out_Buf_Index;
-char 			data		ACP_In_Buf[ACP_In_Buf_Max];
-char 			data		ACP_Out_Buf[ACP_Out_Buf_Max];
+char 	data	Indiv_To_ACP_[5];						// Individual data array to ACP	
+char 	data	ACP_In_Buf_Index;
+char 	data	ACP_Out_Buf_Index;
+char 	data	ACP_In_Buf[ACP_In_Buf_Max];
+char 	data	ACP_Out_Buf[ACP_Out_Buf_Max];
 
 
 /* Declare related to ADC */
@@ -192,7 +202,7 @@ sbit 	ADC_SCLK_Pin 	= P1^2;
 sbit 	ADC_CS_Pin   	= P1^1;
 sbit 	ADC_DO_Pin		= P1^0;
 	
-int     data				ADC_Data;			// 2 bytes
+int     data	ADC_Data;			// 2 bytes
 
 
 /* Declare related to ACUD */
@@ -205,13 +215,12 @@ sbit 	Air_Heater_Pin	= P0^4;					//
 sbit 	Card_Det_Pin  	= P0^5;					// Card detection
 // Port 3:
 sbit 	WatchDog_ST  	= P3^4;					// sbit T0      = 0xB4;	        // T0
-
-char		data			ACUD_ID_Hex;
-float 	data				Temperature_Setting;
-float		data			Temperature_Reality;
-char		data			Checkout_Air_Period;					// 10-60min in an hour
-char    data 				Minute_Counter;
-char    data 				FAN_Speed;								// 0:L, 1:M,  2:H
+char	data	ACUD_ID_Hex;
+float 	data	Temperature_Setting;
+float	data	Temperature_Reality;
+char	data	Checkout_Air_Period;			// 10-60min in an hour
+char    data 	Minute_Counter;
+char    data 	FAN_Speed;						// 0:L, 1:M,  2:H
 
 
 
@@ -249,7 +258,7 @@ char    data 				FAN_Speed;								// 0:L, 1:M,  2:H
 
 // ##### Period Timer	
 void TIMER0_Ten_mS_Init(char Ten){					// 10*mS timer
-	// char xdata Ten;
+
 	TMOD &= 0xF0;								// Clear Timer 0 
 	TMOD |= 0x01; 								// Mode 1, 16 bit timer/count mode	
 	
@@ -300,13 +309,12 @@ void TIMER0_Ten_mS() interrupt 1 {				// Timer0 INT vector=000Bh
 	}
 }
 
-void mS_Delay(char NmS){								// Delay N*ms 
+void mS_Delay(char NmS){						// Delay N*ms 
 	
-	// char xdata NmS;
 	char  i;
-	char  j;								// 宣告整數變數i,j
+	char  j;									// 宣告整數變數i,j
 	for (i=0;i<NmS;i++)							// 計數N次,延遲 m*1ms 
-	//#if Fosc == 22.1184							// 延遲 t*1ms @22.1184MHz
+	//#if Fosc == 22.1184						// 延遲 t*1ms @22.1184MHz
 		for (j=0;j<1600;j++);
 	//	;										// means NOP ;
 	//#else										// 延遲 t*1ms @11.0952MHz
@@ -443,9 +451,8 @@ void PC_UART_Init(){
 }
 
 bool PC_Tx_Handler(char *Indiv_PC_Tx_Ptr){		// Pointer of individual data array (Indiv_To_PC[])
-		/* Data in Indiv_To_PC[] including "Enter" as tail */
-	// int xdata 	*Indiv_PC_Tx_Ptr;
-	bool 		Resp;
+	/* Data in Indiv_To_PC[] including "Enter" as tail */
+	bool 	Resp;
 	char 	i = 0;
 	char 	PC_TBUF;
 	
@@ -529,7 +536,6 @@ void ACP_Tx_PhyLayer(){
 	/* ACP_Out_Buf[] had been prepared ready and call by ACP_Tx_Handler(),
 	   "Enter" char no neet to send to ACP */
 	/* Comm.ACP_Tx_Busy_Flg had been set in ACP_Tx_Handler() */	
-	
 	char 	i = 0;
 	char 	ACP_T_TEMP;
 
@@ -568,7 +574,7 @@ bool ACP_Tx_Handler(char *Indiv_To_ACP_Ptr){		// Pointer of individual data arra
 	// sbit ACP_TxD0	= P3^6;					// WR
 	// sbit ACP_485Tx   = P3^5;					// T1
 	// sbit ACP_INT1 	= P3^3;					// INT1, connect to pin RxD0
-	// int xdata 	*Indiv_To_ACP_Ptr;
+
 	bool Resp;
 	char 	i = 0;
 	char 	ACP_T_TEMP;
@@ -711,7 +717,7 @@ float ADC_Rd(){									// n=10 or 12, n bits convert resolution
 // ##### ACUD
 
 char Hex2Dec(char Hex2D){
-	// char xdata 	Hex2D;
+
 	char 	Dec;
 	char  remainder;
 	char  count = 0;
@@ -735,7 +741,8 @@ char Dec2Hex(char Dec2H){
 }
 
 char *HexInt2ASCIIStr(char HexInt2A){
-	// char xdata 	HexInt2A;
+	/* Return Function: A function which retrun a address */
+	
 	char 	AscStr[3];
 	
 	AscStr[0] = HexInt2A/100+48;					// Hunderd digit
@@ -746,7 +753,8 @@ char *HexInt2ASCIIStr(char HexInt2A){
 }
 
 char *HexInt2DecStr(char HexInt2D){
-	// char xdata 	HexInt2D;
+	/* Return Function: A function which retrun a address */
+	
 	char 	DecStr[3];
 	
 	DecStr[0] = HexInt2D/100;						// Hunderd digit
@@ -758,7 +766,7 @@ char *HexInt2DecStr(char HexInt2D){
 
 char DecStr2HexInt(char *DecStr){	
 	/* string length must be 2 digits */
-	// char xdata 	*DecStr;
+
 	char 	HexInt;
 	char 	temp;
 	
@@ -828,9 +836,9 @@ void System_Init(){
 }
 
 void PC_C_Event_Reply(char *Cmd){
-	//char xdata *Cmd;
+
 	bool Resp;
-/* Reply back to PC */
+	/* Reply back to PC */
 	strcpy(Indiv_To_PC,"A");
 	strcat(Indiv_To_PC,ACUD_ID_3Dec);
 	strcat(Indiv_To_PC,Cmd);					
@@ -854,7 +862,7 @@ void PC_C_Event_Reply(char *Cmd){
 
 void PC_D_Event_Reply(){
 	bool 	Resp;
-/* Reply back to PC */
+	/* Reply back to PC */
 	strcpy(Indiv_To_PC,"DONE");
 	strcat(Indiv_To_PC,ACUD_ID_3Dec);					
 	strcat(Indiv_To_PC,Enter);						//	Carry Return
@@ -881,8 +889,8 @@ void PC_D_Event_Reply(){
 /* PC Event manipulate */
 void PC_StateEvent(){
 	
-	char *ACUD_ID_3Dec_Ptr;						// Point to ID start position
-	char *Command_Ptr;							// point to Command start position
+	char *ACUD_ID_3Dec_Ptr;							// Point to ID start position
+	char *Command_Ptr;								// point to Command start position
 	char *Tempe_Ptr;								// Point to temperature start position
 //	char	Indiv_To_PC[5];							// Individual data array to PC					
 	/* Using array to instead of pointer to reserve memory firmdly, when implementing strcpy(), strcat() */
