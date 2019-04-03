@@ -2,7 +2,7 @@
 // ***********************************************************************
 // ACUD.C
 //
-// 8051 Keil C51 
+// Keil C51 
 // Device: AT89C51RC
 // Target: 
 //		Xtal: 22M
@@ -11,8 +11,8 @@
 //		Use On-Chip ROM: Enable
 //		Use On-Chip RAM: Enable
 //
-// Author: Duncan Tseng
-// Date: W124, H1450
+// Author	: Duncan Tseng
+// DateTime	: W143, H1030
 //
 // ***********************************************************************
 
@@ -117,7 +117,6 @@ sbit 	ET0  	= 0xA9;							// sbit ET0 = 0xA8^1
 sbit 	EX0  	= 0xA8;							// sbit EX0 = 0xA8^0
 */
 
-
 	
 #ifndef MYBOOLEAN_H
 	#define MYBOOLEAN_H
@@ -127,9 +126,11 @@ sbit 	EX0  	= 0xA8;							// sbit EX0 = 0xA8^0
 #endif	
 
 
-
 /* Declare related to Timer */
 unsigned short 	data	Ten_mS_Counter;					// 2 bytes: 0-65535
+
+
+/* ########## Declare related to Communication */
 
 /* Bit Field: 是一種省空間的特殊 data member, 可以使用特定幾個 bit 來放 data.
 // The declaration of a bit-field has the following form inside a structure
@@ -143,7 +144,6 @@ unsigned short 	data	Ten_mS_Counter;					// 2 bytes: 0-65535
 //		} Flag Name;   						
 */
 
-/* Declare related to Communication */
 //*union {										// union: all variables in union share same memory
 	/* Note: data type must be signed or unsigned */
 //*	unsigned char	Comm_Flag;
@@ -158,7 +158,7 @@ unsigned short 	data	Ten_mS_Counter;					// 2 bytes: 0-65535
 //*} Comm;
 
 
-/* Declare related to UART */
+/* ########## Declare related to UART */
 #define Fosc				22.1184				// ***** Need to be confirmed (0r 11.0592 )
 #define Baudrate			9600				// ***** Need to be confirmed
 #define PC_In_Buf_Max 		5					// ***** Need to be confirmed
@@ -175,11 +175,9 @@ char	data	Indiv_To_PC[5];							// Individual data array to PC
 char 	data  	*ACUD_ID_3Dec;
 
 
-
-/* Declare related to ACP */
+/* ########## Declare related to ACP */
 #define ACP_In_Buf_Max 			5				// ***** Need to be confirmed
 #define ACP_Out_Buf_Max			5				// ***** Need to be confirmed
-
 // Port 3: 
 sbit 	ACP_RxD0		= P3^7;					// sbit RD   	= 0xB7;			// RD
 sbit 	ACP_TxD0		= P3^6;					// sbit WR      = 0xB6;			// WR
@@ -193,7 +191,7 @@ char 	data	ACP_In_Buf[ACP_In_Buf_Max];
 char 	data	ACP_Out_Buf[ACP_Out_Buf_Max];
 
 
-/* Declare related to ADC */
+/* ########## Declare related to ADC */
 // ADC: SPI(Serial Peripheral Interface) Simulator
 			 
 // Port 1: 
@@ -201,11 +199,10 @@ sbit 	ADC_DIN_Pin  	= P1^3;
 sbit 	ADC_SCLK_Pin 	= P1^2;
 sbit 	ADC_CS_Pin   	= P1^1;
 sbit 	ADC_DO_Pin		= P1^0;
-	
 int     data	ADC_Data;			// 2 bytes
 
 
-/* Declare related to ACUD */
+/* ########## Declare related to ACUD */
 // Port 0: 
 sbit 	Fan_H_Pin	    = P0^0;					// Fan speed 
 sbit 	Fan_M_Pin	 	= P0^1;					// Fan speed 
@@ -221,9 +218,6 @@ float	data	Temperature_Reality;
 char	data	Checkout_Air_Period;			// 10-60min in an hour
 char    data 	Minute_Counter;
 char    data 	FAN_Speed;						// 0:L, 1:M,  2:H
-
-
-
 //* union {										// union: all variables in union share same memory
 	/* Note: data type must be signed or unsigned */
 //*	unsigned char ACUD_Flag;
@@ -237,7 +231,6 @@ char    data 	FAN_Speed;						// 0:L, 1:M,  2:H
 		// unsigned char WD_Rst_Flg			: 1;	// WatchDog reset request
 	}ACUD;
 //* } ACUD;
-
 
 
 /* Interrupt Vector(中斷向量)
@@ -256,7 +249,7 @@ char    data 	FAN_Speed;						// 0:L, 1:M,  2:H
 // @@@@@@@@@@@@@@@      Program      @@@@@@@@@@@@@@@
 
 
-// ##### Period Timer	
+// ########## Period Timer	
 void TIMER0_Ten_mS_Init(char Ten){					// 10*mS timer
 
 	TMOD &= 0xF0;								// Clear Timer 0 
@@ -333,7 +326,7 @@ void uS_Delay (char NuS){								// Delay u*us, 52us or 104us
 
 
 
-// ##### PC Communication
+// ########## PC Communication
 // void PC_UART_Init(float Fosc ,unsigned short Baudrate){		// Include T1 init
 void PC_UART_Init(){
 	
@@ -522,7 +515,7 @@ void PC_UART_RxTx() interrupt 4 { 				// UART INT, vector=0023h
 
 
 
-// ##### ACP Communication
+// ########## ACP Communication
 void ACP_Init(){
 
 	ACP_In_Buf_Index = 0;	
@@ -654,7 +647,7 @@ void ACP_Rx() interrupt 2 {
 }
 
 
-// ##### Temperture Reading: ADC AD7911
+// ########## Temperture Reading: ADC AD7911
 void ADC_Init(){
 /* ADC AD7911 
 // a minimum of 14 serial clock cycles, respectively, are needed 
@@ -714,7 +707,7 @@ float ADC_Rd(){									// n=10 or 12, n bits convert resolution
 
 
 
-// ##### ACUD
+// ########## ACUD
 
 char Hex2Dec(char Hex2D){
 
@@ -802,7 +795,7 @@ void ACUD_Init(){
 
 
 	
-// ##### System Initialization
+// ########## System Initialization
 void System_Init(){
 	
 	PCON = 0x00;								// SMOD = 0;
@@ -885,7 +878,7 @@ void PC_D_Event_Reply(){
 
 
 
-// ##### Event manipulate 
+// ########## Event manipulate 
 /* PC Event manipulate */
 void PC_StateEvent(){
 	
@@ -1221,7 +1214,7 @@ void WatchDog(){
 
 
 
-// ##### Main Program #####
+// ########## Main Program ##########
 main(){
 
 	IE = 0x00;									// Set all interrupt disable
