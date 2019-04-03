@@ -12,7 +12,7 @@
 //		Use On-Chip RAM: Enable
 //
 // Author	: Duncan Tseng
-// DateTime	: W143, H1030
+// DateTime	: W143, H11450
 //
 // ***********************************************************************
 
